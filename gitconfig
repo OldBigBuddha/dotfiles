@@ -1,0 +1,34 @@
+[user]
+  name = OldBigBuddha
+  email = development@oldbigbuddha.net
+[core]
+  filemode = false
+  ignorecase = false
+  quotepath = false
+  excludesfile = $HOME/.gitignore_global
+  editor = vim
+[color]
+  ui = true
+  diff = auto
+  status = auto
+  branch = auto
+[ghq]
+  root = $WORK_DIR/ghq
+[filter "lfs"]
+  clean = git-lfs clean -- %f
+  smudge = git-lfs smudge -- %f
+  process = git-lfs filter-process
+  required = true
+[pull]
+  rebase = true
+  ff = only
+[init]
+  defaultBranch = main
+[merge]
+  tool = vscode
+[mergetool]
+  prompt = false
+  keepBackup = false
+[mergetool "vscode"]
+  cmd = '/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code' \"$MERGED\"
+  trustExitCode = false
