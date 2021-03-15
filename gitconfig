@@ -5,7 +5,7 @@
   filemode = false
   ignorecase = false
   quotepath = false
-  excludesfile = $HOME/.gitignore_global
+  excludesfile = /Users/developer/.gitignore_global
   editor = vim
 [color]
   ui = true
@@ -13,7 +13,7 @@
   status = auto
   branch = auto
 [ghq]
-  root = $WORK_DIR/ghq
+  root = /Users/developer/work_dir/ghq
 [filter "lfs"]
   clean = git-lfs clean -- %f
   smudge = git-lfs smudge -- %f
