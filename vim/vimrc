@@ -1,4 +1,4 @@
-set shell=/bin/zsh
+set shell=/bin/bash
 
 " encoding
 set encoding=utf8
