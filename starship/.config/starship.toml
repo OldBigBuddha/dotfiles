@@ -1,0 +1,9 @@
+format = '$all'
+
+# default: 500
+command_timeout = 3000
+
+[gcloud]
+format = '[$symbol$active - $account(@$domain)(\($project\))]($style) '
+style = 'bold yellow'
+
