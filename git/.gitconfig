@@ -1,0 +1,25 @@
+[user]
+	name = Shinra Yamakawa
+	email = s.yamakawa@flatt.tech
+	signingkey = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDvQze+HOHpQPzD5Uv6yu+wtUh+Zpe9I2HXn1KwadphZ
+[fetch]
+	prune = true
+[core]
+	ignorecase = false
+	quotepath = false
+[color]
+	ui = true
+	diff = auto
+	status = auto
+	branch = auto
+[init]
+	defaultBranch = main
+[gpg]
+  format = ssh
+
+[gpg "ssh"]
+  program = "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
+
+[commit]
+  gpgsign = true
+
