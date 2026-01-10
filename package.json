@@ -1,0 +1,17 @@
+{
+  "name": "dotfiles",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "secretlint": "secretlint '**/*'",
+    "prepare": "simple-git-hooks"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm secretlint"
+  },
+  "devDependencies": {
+    "@secretlint/secretlint-rule-preset-recommend": "^11.2.5",
+    "secretlint": "^11.2.5",
+    "simple-git-hooks": "^2.13.1"
+  }
+}
