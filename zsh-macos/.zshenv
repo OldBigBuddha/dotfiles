@@ -1,3 +1,5 @@
+# .zshenv - macOS
+
 export PATH
 export MANPATH
 export WORK_DIR
@@ -7,18 +9,14 @@ work_dir=$HOME/work_dir
 npm_packages=$HOME/.npm-packages
 
 # -U: keep only the first occurrence of each duplicated value
-# ref. http://zsh.sourceforge.net/Doc/Release/Shell-Builtin-Commands.html#index-typeset
 typeset -U PATH path MANPATH manpath FPATH fpath
 
 # ignore /etc/zprofile, /etc/zshrc, /etc/zlogin, and /etc/zlogout
-# ref. http://zsh.sourceforge.net/Doc/Release/Files.html
-# ref. http://zsh.sourceforge.net/Doc/Release/Options.html#index-GLOBALRCS
 unsetopt GLOBAL_RCS
 
-# copied from /etc/zprofile
-# system-wide environment settings for zsh(1)
+# macOS path_helper
 if [ -x /usr/libexec/path_helper ]; then
-    eval `/usr/libexec/path_helper -s`
+    eval $(/usr/libexec/path_helper -s)
 fi
 
 path=(
@@ -35,6 +33,8 @@ manpath=(
     ${manpath}
 )
 
-. "$HOME/.cargo/env"
+# Homebrew command restrictions
+export HOMEBREW_FORBIDDEN_FORMULAE="node python python3 pip npm pnpm yarn claude"
 
-
+# Cargo
+[ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"

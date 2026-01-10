@@ -15,11 +15,10 @@
 [init]
 	defaultBranch = main
 [gpg]
-  format = ssh
-
-[gpg "ssh"]
-  program = "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
-
+	format = ssh
 [commit]
-  gpgsign = true
+	gpgsign = true
 
+# Include OS-specific config (ignored if file doesn't exist)
+[include]
+	path = ~/.config/git/local.inc

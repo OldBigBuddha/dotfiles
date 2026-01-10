@@ -10,7 +10,7 @@ This is a personal dotfiles repository managed with **GNU Stow**, a symlink farm
 
 ### GNU Stow Package Structure
 
-Each package directory (zsh, git, nvim, etc.) mirrors the target filesystem structure from `$HOME`:
+Each package directory mirrors the target filesystem structure from `$HOME`. Packages follow a naming convention: `xxx-macos` for cross-platform configs (with future `xxx-linux` or `xxx-common` variants), and plain names for macOS-only tools:
 
 ```
 package-name/
@@ -23,12 +23,24 @@ When you run `stow package-name`, files are symlinked: `~/dotfiles/package-name/
 
 ### Package List
 
-- **zsh**: Shell configuration (.zshrc, .zshenv, .zprofile)
+**macOS Only:**
+- **aerospace**: Tiling window manager configuration
+- **sketchybar**: macOS status bar customization
+- **wezterm**: Terminal emulator configuration
+
+**Cross-platform (common):**
+- **gh**: GitHub CLI configuration (config.yml only, NOT hosts.yml)
 - **git**: Git configuration (.gitconfig, .config/git/ignore)
 - **nvim**: Neovim editor configuration (AstroNvim setup)
 - **starship**: Starship prompt configuration
-- **gh**: GitHub CLI configuration (config.yml only, NOT hosts.yml)
-- **claude**: Claude Code settings and custom commands
+- **zsh**: Shared shell settings (history, keybindings, aliases, tool init)
+
+**Cross-platform (macOS):**
+- **claude-macos**: Claude Code settings and custom commands
+- **git-macos**: macOS-specific git settings (1Password SSH signing)
+- **zsh-macos**: Shell configuration (.zshrc, .zshenv, .zprofile) - sources zsh
+
+> **Adding OS-specific config**: When a common package needs OS-specific settings, create `xxx-macos` (or `xxx-linux`) with only the OS-specific parts. Use include/source to load them. See git/git-macos as reference.
 
 ## Common Commands
 
@@ -48,8 +60,10 @@ brew install stow
 # Install a package (create symlinks)
 stow <package-name>
 
-# Install all packages
-stow zsh git nvim starship gh claude
+# Install all packages (macOS)
+stow aerospace sketchybar wezterm
+stow gh git nvim starship zsh
+stow claude-macos git-macos zsh-macos
 
 # Uninstall a package (remove symlinks)
 stow -D <package-name>
@@ -86,7 +100,7 @@ If stow reports conflicts, existing files must be removed or backed up before st
 
 ## Package-Specific Notes
 
-### claude Package
+### claude-macos Package
 
 Contains global Claude Code configuration that applies to ALL projects:
 - `CLAUDE.md` - Global workflow and coding standards
@@ -96,9 +110,12 @@ Contains global Claude Code configuration that applies to ALL projects:
 
 This dotfiles repository should have its own CLAUDE.md (this file) for repository-specific guidance.
 
-### git Package
+### git + git-macos Packages
 
-Includes both `.gitconfig` and `.config/git/ignore` for global git ignore patterns.
+- `git`: Core `.gitconfig` and `.config/git/ignore`
+- `git-macos`: macOS-specific settings in `.config/git/local.inc` (1Password SSH signing)
+
+The `.gitconfig` includes `~/.config/git/local.inc` which is provided by the OS-specific package.
 
 ### nvim Package
 
