@@ -2,7 +2,7 @@ local wezterm = require("wezterm")
 local config = wezterm.config_builder()
 
 config.automatically_reload_config = true
-config.font_size = 19
+config.font_size = 16
 config.use_ime = true
 
 ----------------------------------------------------
@@ -71,11 +71,39 @@ wezterm.on("format-tab-title", function(tab, tabs, panes, config, hover, max_wid
 end)
 
 ----------------------------------------------------
+-- notification
+----------------------------------------------------
+local function is_claude(pane)
+  local process = pane:get_foreground_process_info()
+  if not process or not process.argv then
+    return false
+  end
+  -- 引数に"claude"が含まれているかチェック
+  for _, arg in ipairs(process.argv) do
+    if arg:find("claude") then
+      return true
+    end
+  end
+  return false
+end
+
+wezterm.on("bell", function(window, pane)
+  if is_claude(pane) then
+    window:toast_notification("Claude Code", "Task completed", nil, 4000)
+    if wezterm.target_triple:find("darwin") then
+      wezterm.background_child_process({ "say", "Claude is calling you" })
+    end
+  end
+end)
+
+----------------------------------------------------
 -- keybinds
 ----------------------------------------------------
 config.disable_default_key_bindings = true
 config.keys = require("keybinds").keys
 config.key_tables = require("keybinds").key_tables
 config.leader = { key = "a", mods = "CTRL", timeout_milliseconds = 2000 }
+config.audible_bell = 'SystemBeep'
 
 return config
+

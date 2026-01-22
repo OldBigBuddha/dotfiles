@@ -26,7 +26,7 @@ export NVM_DIR=$HOME/.nvm
 # Tool initialization (cross-platform)
 command -v fzf >/dev/null 2>&1 && eval "$(fzf --zsh)"
 command -v starship >/dev/null 2>&1 && eval "$(starship init zsh)"
-command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init zsh --cmd cd)"
+command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init zsh)"
 command -v mcfly >/dev/null 2>&1 && eval "$(mcfly init zsh)"
 
 # safe-chain (if exists)

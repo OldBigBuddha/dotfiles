@@ -6,3 +6,4 @@
 
 # Load macOS-specific configuration
 [ -f ~/.config/zsh/path-macos.zsh ] && source ~/.config/zsh/path-macos.zsh
+eval "$(~/.local/bin/mise activate zsh)"
