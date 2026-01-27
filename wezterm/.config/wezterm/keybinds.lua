@@ -135,6 +135,7 @@ return {
       { key = "k", action = act.ActivatePaneDirection("Up") },
       { key = "j", action = act.ActivatePaneDirection("Down") },
     },
+
     -- copyモード leader + [
     copy_mode = {
       -- 移動
@@ -189,6 +190,20 @@ return {
       { key = "Escape", mods = "NONE", action = act.CopyMode("Close") },
       { key = "c", mods = "CTRL", action = act.CopyMode("Close") },
       { key = "q", mods = "NONE", action = act.CopyMode("Close") },
+    },
+  },
+
+  mouse_bindings = {
+    {
+      event = { Up = { stroke_count = 1, triple_click = false } },
+      mods = 'NONE',
+      action = wezterm.action.DisableDefaultAssignment,
+    },
+    -- CMD + Click でリンクを開くように設定
+    {
+      event = { Up = { stroke_count = 1, triple_click = false } },
+      mods = 'SUPER',
+      action = wezterm.action.OpenLinkAtMouseCursor,
     },
   },
 }
