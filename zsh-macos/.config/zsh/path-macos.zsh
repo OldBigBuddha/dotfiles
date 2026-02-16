@@ -2,7 +2,6 @@
 
 export PNPM_HOME="$HOME/Library/pnpm"
 
-typeset -U path PATH
 path=(
   $HOME/.local/bin(N-/)
   $(go env GOPATH 2>/dev/null)/bin(N-/)
@@ -22,8 +21,8 @@ path=(
 )
 
 # Google Cloud SDK
-[ -f "$HOME/google-cloud-sdk/path.zsh.inc" ] && source "$HOME/google-cloud-sdk/path.zsh.inc"
-[ -f "$HOME/google-cloud-sdk/completion.zsh.inc" ] && source "$HOME/google-cloud-sdk/completion.zsh.inc"
+[ -f "$HOME/work_dir/google-cloud-sdk/path.zsh.inc" ] && source "$HOME/work_dir/google-cloud-sdk/path.zsh.inc"
+[ -f "$HOME/work_dir/google-cloud-sdk/completion.zsh.inc" ] && source "$HOME/work_dir/google-cloud-sdk/completion.zsh.inc"
 
 # Homebrew completions and plugins
 if type brew &>/dev/null; then

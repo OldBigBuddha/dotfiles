@@ -19,9 +19,11 @@ if [ -x /usr/libexec/path_helper ]; then
     eval $(/usr/libexec/path_helper -s)
 fi
 
+# Minimal PATH for non-interactive shells
+# Interactive shells: overridden by path-macos.zsh
 path=(
     $HOME/.local/bin(N-/)
-    ${npm_packages}/bin(N-/)
+    $HOME/.orbstack/bin(N-/)
     /usr/local/bin(N-/)
     /usr/local/sbin(N-/)
     ${path}
@@ -35,6 +37,3 @@ manpath=(
 
 # Homebrew command restrictions
 export HOMEBREW_FORBIDDEN_FORMULAE="node python python3 pip npm pnpm yarn claude"
-
-# Cargo
-[ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
