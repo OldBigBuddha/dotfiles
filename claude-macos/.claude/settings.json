@@ -3,6 +3,20 @@
   "env": {
     "DISABLE_AUTOUPDATER": "1"
   },
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(xargs dirname:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\ndocs\\(phase3\\): add resource pool design and implementation plan\n\nAdd Resource Pool abstraction design \\(1 HD = 1 backend constraint,\ninternal Resource Slot, atomic Reserve/Release\\) and Phase 3 step-by-step\nimplementation plan covering ResourcePool integration and QEMU Runtime.\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\ndocs\\(phase3\\): add reservation state machine with commit/rollback semantics\n\nResourcePool interface now has four operations \\(Reserve, Commit, Rollback,\nRelease\\) instead of two. Reserve creates a tentative hold, Commit confirms\nafter successful Start, Rollback undoes on Start failure, Release returns\ncommitted resources on Destroy. Added D5 decision documenting the state\nmachine rationale.\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git log:*)"
+    ],
+    "deny": [
+      "Read(./.entire/metadata/**)"
+    ],
+    "defaultMode": "default"
+  },
   "hooks": {
     "PostToolUse": [
       {
@@ -25,5 +39,6 @@
     "typescript-lsp@claude-plugins-official": true,
     "pr-review-toolkit@claude-plugins-official": true
   },
-  "alwaysThinkingEnabled": true
+  "alwaysThinkingEnabled": true,
+  "promptSuggestionEnabled": false
 }

@@ -1,8 +1,12 @@
 local wezterm = require("wezterm")
 local config = wezterm.config_builder()
 
+wezterm.on('window-config-reloaded', function(window, pane)
+  window:toast_notification('wezterm', 'Configuration reloaded!', nil, 4000)
+end)
+
 config.automatically_reload_config = true
-config.font_size = 16
+config.font_size = 27
 config.use_ime = true
 
 ----------------------------------------------------

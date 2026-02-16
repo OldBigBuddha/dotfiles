@@ -7,6 +7,7 @@
 [core]
 	ignorecase = false
 	quotepath = false
+	editor = nvim
 [color]
 	ui = true
 	diff = auto
@@ -22,3 +23,5 @@
 # Include OS-specific config (ignored if file doesn't exist)
 [include]
 	path = ~/.config/git/local.inc
+[safe]
+	directory = /Users/pc0038/work_dir/puchisunaba/phase2

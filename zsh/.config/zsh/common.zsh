@@ -19,10 +19,6 @@ export MCFLY_HISTORY_LIMIT=10000
 # colors
 autoload -Uz colors && colors
 
-# NVM
-export NVM_DIR=$HOME/.nvm
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-
 # Tool initialization (cross-platform)
 command -v fzf >/dev/null 2>&1 && eval "$(fzf --zsh)"
 command -v starship >/dev/null 2>&1 && eval "$(starship init zsh)"
