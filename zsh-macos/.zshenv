@@ -3,9 +3,11 @@
 export PATH
 export MANPATH
 export WORK_DIR
+export ANTIGRAVITY_ROOT
 export NPM_PACKAGES
 
 work_dir=$HOME/work_dir
+antigravity_root=$HOME/.antigravity
 npm_packages=$HOME/.npm-packages
 
 # -U: keep only the first occurrence of each duplicated value
@@ -24,6 +26,7 @@ fi
 path=(
     $HOME/.local/bin(N-/)
     $HOME/.orbstack/bin(N-/)
+    $ANTIGRAVITY_ROOT/antigravity/bin
     /usr/local/bin(N-/)
     /usr/local/sbin(N-/)
     ${path}
