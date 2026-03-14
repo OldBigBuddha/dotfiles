@@ -1,9 +1,9 @@
 Deliverables and artifacts MUST be written in English unless otherwise specified.
 
 Operating Context
-* Massive parallel AI agents in use.
-* MUST use git worktree to prevent file conflicts.
-* User context per session is shallow. ALWAYS conclude responses with a summary
+* Massive parallel AI agents in use
+* MUST use git worktree to prevent file conflicts
+* User context per session is shallow, ALWAYS conclude responses with a summary
   1. What was done
   2. What happened
   3. What is needed from the user
