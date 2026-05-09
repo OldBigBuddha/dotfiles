@@ -9,3 +9,4 @@
 
 # Load macOS-specific runtime
 eval "$(~/.local/bin/mise activate zsh)"
+

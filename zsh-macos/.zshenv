@@ -5,10 +5,13 @@ export MANPATH
 export WORK_DIR
 export ANTIGRAVITY_ROOT
 export NPM_PACKAGES
+# for microsandbox
+export DYLD_LIBRARY_PATH
 
 work_dir=$HOME/work_dir
 antigravity_root=$HOME/.antigravity
 npm_packages=$HOME/.npm-packages
+dyld_library_path=$HOME/.microsandbox/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}
 
 # -U: keep only the first occurrence of each duplicated value
 typeset -U PATH path MANPATH manpath FPATH fpath
@@ -25,12 +28,14 @@ fi
 # Interactive shells: overridden by path-macos.zsh
 path=(
     $HOME/.local/bin(N-/)
+    $HOME/.microsandbox/bin(N-/)
     $HOME/.orbstack/bin(N-/)
     $ANTIGRAVITY_ROOT/antigravity/bin
     /usr/local/bin(N-/)
     /usr/local/sbin(N-/)
     ${path}
 )
+
 
 manpath=(
     /usr/local/share/man(N-/)
