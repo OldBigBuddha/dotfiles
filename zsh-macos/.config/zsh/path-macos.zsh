@@ -21,8 +21,8 @@ path=(
 )
 
 # Google Cloud SDK
-[ -f "$HOME/work_dir/google-cloud-sdk/path.zsh.inc" ] && source "$HOME/work_dir/google-cloud-sdk/path.zsh.inc"
-[ -f "$HOME/work_dir/google-cloud-sdk/completion.zsh.inc" ] && source "$HOME/work_dir/google-cloud-sdk/completion.zsh.inc"
+[ -f "$HOME/.local/share/google-cloud-sdk/path.zsh.inc" ] && source "$HOME/.local/share/google-cloud-sdk/path.zsh.inc"
+[ -f "$HOME/.local/share/google-cloud-sdk/completion.zsh.inc" ] && source "$HOME/.local/share/google-cloud-sdk/completion.zsh.inc"
 
 # Homebrew completions and plugins
 if type brew &>/dev/null; then
