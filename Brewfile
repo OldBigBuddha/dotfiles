@@ -30,5 +30,6 @@ brew "python-yq"
 brew "felixkratz/formulae/sketchybar"
 
 # Casks
+cask "1password-cli"
 cask "aerospace"
 cask "wezterm@nightly"
