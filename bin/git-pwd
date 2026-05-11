@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Print the current working directory relative to the git repository root.
+# At the repo root, prints ".".
+#
+# Usage:
+#   git-pwd        Print path relative to the working tree root (worktree-aware)
+#   git-pwd -m     Print path relative to the main repository root (ignoring worktree)
+
+main_repo=false
+
+while getopts "m" opt; do
+  case "${opt}" in
+    m) main_repo=true ;;
+    *) echo "Usage: git-pwd [-m]" >&2; exit 1 ;;
+  esac
+done
+
+if [[ "${main_repo}" == true ]]; then
+  # Resolve the main repository root, then compute relative path from it.
+  local_git_common_dir="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"
+  if [[ -z "${local_git_common_dir}" ]]; then
+    echo "fatal: not a git repository" >&2
+    exit 1
+  fi
+  if [[ "${local_git_common_dir}" == */.git/worktrees/* ]]; then
+    repo_root="${local_git_common_dir%/.git/worktrees/*}"
+  else
+    repo_root="${local_git_common_dir%/.git}"
+  fi
+  cwd="$(pwd -P)"
+  if [[ "${cwd}" == "${repo_root}" ]]; then
+    echo "."
+  else
+    echo "${cwd#"${repo_root}"/}"
+  fi
+else
+  if ! prefix="$(git rev-parse --show-prefix 2>/dev/null)" || \
+     ! git rev-parse --is-inside-work-tree &>/dev/null; then
+    echo "fatal: not a git repository" >&2
+    exit 1
+  fi
+  # --show-prefix returns "a/b/c/" with trailing slash, or "" at root.
+  if [[ -z "${prefix}" ]]; then
+    echo "."
+  else
+    # Remove trailing slash.
+    echo "${prefix%/}"
+  fi
+fi

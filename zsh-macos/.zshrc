@@ -9,4 +9,5 @@
 
 # Load macOS-specific runtime
 eval "$(~/.local/bin/mise activate zsh)"
+eval "$(mcfly init zsh)"
 

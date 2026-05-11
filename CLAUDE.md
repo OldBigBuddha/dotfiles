@@ -31,8 +31,10 @@ When you run `stow package-name`, files are symlinked: `~/dotfiles/package-name/
 **Cross-platform (common):**
 - **gh**: GitHub CLI configuration (config.yml only, NOT hosts.yml)
 - **git**: Git configuration (.gitconfig, .config/git/ignore)
+- **mise**: mise global tool versions (`~/.config/mise/config.toml`)
 - **nvim**: Neovim editor configuration (AstroNvim setup)
 - **starship**: Starship prompt configuration
+- **yazi**: Yazi file manager configuration
 - **zsh**: Shared shell settings (history, keybindings, aliases, tool init)
 
 **Cross-platform (macOS):**
@@ -47,11 +49,19 @@ When you run `stow package-name`, files are symlinked: `~/dotfiles/package-name/
 ### Setup and Installation
 
 ```bash
-# Automated setup (installs stow if needed, then all packages)
+# Install all Homebrew packages (taps, brews, casks)
+brew bundle --file=Brewfile
+
+# Automated stow setup (installs stow if needed, then all packages)
 ./setup.sh
 
-# Manual stow installation
-brew install stow
+# mise (language runtimes — node/python/go/rust). Brew is blocked from
+# installing these via HOMEBREW_FORBIDDEN_FORMULAE in zsh-macos/.zshenv.
+curl https://mise.run | sh
+mise install
+
+# Claude Code
+curl -fsSL https://claude.ai/install.sh | bash
 ```
 
 ### Package Management
@@ -62,7 +72,7 @@ stow <package-name>
 
 # Install all packages (macOS)
 stow aerospace sketchybar wezterm
-stow gh git nvim starship zsh
+stow gh git mise nvim starship yazi zsh
 stow claude-macos git-macos zsh-macos
 
 # Uninstall a package (remove symlinks)

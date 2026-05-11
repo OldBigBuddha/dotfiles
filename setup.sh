@@ -24,7 +24,7 @@ OS="$(uname)"
 MACOS_ONLY=(aerospace sketchybar wezterm)
 
 # Common packages (no OS suffix)
-COMMON=(gh git nvim starship zsh)
+COMMON=(gh git mise nvim starship yazi zsh)
 
 # Cross-platform packages (with OS suffix)
 CROSS_PLATFORM=(claude git zsh)
@@ -61,6 +61,19 @@ for package in "${CROSS_PLATFORM[@]}"; do
         stow -v "$pkg_name"
     fi
 done
+
+# Install standalone scripts into ~/.local/bin (copied, not symlinked).
+# Stow is intentionally avoided here: $HOME/.local/bin commonly holds
+# binaries from other installers (mise, claude, etc.), and a symlink farm
+# would conflict with them.
+if [[ -d "bin" ]]; then
+    echo "📝 Installing scripts to ~/.local/bin..."
+    mkdir -p "$HOME/.local/bin"
+    for script in bin/*; do
+        [[ -f "$script" ]] || continue
+        install -m 0755 "$script" "$HOME/.local/bin/$(basename "$script")"
+    done
+fi
 
 echo ""
 echo "✅ Dotfiles setup complete!"

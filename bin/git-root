@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Print the root directory of the current git repository.
+# Supports both regular repositories and git worktrees.
+#
+# Usage:
+#   git-root        Print the working tree root (worktree-aware)
+#   git-root -m     Print the main repository root (ignoring worktree)
+
+main_repo=false
+
+while getopts "m" opt; do
+  case "${opt}" in
+    m) main_repo=true ;;
+    *) echo "Usage: git-root [-m]" >&2; exit 1 ;;
+  esac
+done
+
+if [[ "${main_repo}" == true ]]; then
+  # Get the main repository root even when inside a worktree.
+  # --git-common-dir points to the shared .git directory.
+  local_git_common_dir="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"
+  if [[ -z "${local_git_common_dir}" ]]; then
+    echo "fatal: not a git repository" >&2
+    exit 1
+  fi
+  # For a regular repo: /repo/.git        -> /repo
+  # For a worktree:     /repo/.git/worktrees/name -> /repo
+  if [[ "${local_git_common_dir}" == */.git/worktrees/* ]]; then
+    echo "${local_git_common_dir%/.git/worktrees/*}"
+  else
+    echo "${local_git_common_dir%/.git}"
+  fi
+else
+  root="$(git rev-parse --show-toplevel 2>/dev/null)"
+  if [[ -z "${root}" ]]; then
+    echo "fatal: not a git repository" >&2
+    exit 1
+  fi
+  echo "${root}"
+fi

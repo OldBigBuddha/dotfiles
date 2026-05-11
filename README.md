@@ -14,8 +14,10 @@ Personal dotfiles managed with GNU Stow.
 
 - **gh**: GitHub CLI configuration
 - **git**: Git configuration (.gitconfig, .config/git/ignore)
+- **mise**: mise tool versions (`~/.config/mise/config.toml`)
 - **nvim**: Neovim editor configuration (AstroNvim setup)
 - **starship**: Starship prompt configuration
+- **yazi**: Yazi file manager configuration
 - **zsh**: Shared shell settings (history, aliases, tool init)
 
 ### Cross-platform (macOS)
@@ -28,26 +30,39 @@ Personal dotfiles managed with GNU Stow.
 
 ## Setup
 
-### Prerequisites
+### Bootstrap (new machine)
 
 ```bash
-brew install stow
-```
-
-### Installation
-
-```bash
+# 1. Install Homebrew, then clone this repo
 git clone <repo-url> ~/dotfiles
 cd ~/dotfiles
 
+# 2. Install Homebrew packages (taps, brews, casks)
+brew bundle --file=Brewfile
+
+# 3. Stow all packages
+./setup.sh
+
+# 4. Install mise (manages language runtimes — node/python/go/rust)
+curl https://mise.run | sh
+mise install   # picks up ~/.config/mise/config.toml from the `mise` package
+
+# 5. Install Claude Code
+curl -fsSL https://claude.ai/install.sh | bash
+```
+
+> Language runtimes (node, python, go, rust, etc.) are intentionally not in `Brewfile`. They are pinned to mise via `HOMEBREW_FORBIDDEN_FORMULAE` in `zsh-macos/.zshenv`.
+
+### Manual installation
+
+```bash
 # Install all packages (macOS)
 stow aerospace sketchybar wezterm
-stow gh git nvim starship zsh
+stow gh git mise nvim starship yazi zsh
 stow claude-macos git-macos zsh-macos
 
 # Or install individually
 stow zsh-macos
-stow git-macos
 ```
 
 ## Usage

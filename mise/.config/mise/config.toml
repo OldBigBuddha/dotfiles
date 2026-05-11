@@ -1,0 +1,10 @@
+[tools]
+"cargo:fd-find" = "latest"
+"cargo:ripgrep" = "latest"
+"cargo:zoxide" = "latest"
+fzf = "latest"
+go = "latest"
+jq = "latest"
+node = "latest"
+python = "latest"
+rust = "latest"
