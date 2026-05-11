@@ -9,6 +9,11 @@ config.automatically_reload_config = true
 config.font_size = 27
 config.use_ime = true
 
+-- Don't let wezterm override SSH_AUTH_SOCK in local panes. The default
+-- behavior points it at an empty launchd agent, which shadows the
+-- 1Password SSH agent and breaks git's op-ssh-sign.
+config.mux_enable_ssh_agent = false
+
 ----------------------------------------------------
 -- Tab
 ----------------------------------------------------
