@@ -4,51 +4,14 @@
     "DISABLE_AUTOUPDATER": "1"
   },
   "permissions": {
-    "deny": [
-      "Read(./.entire/metadata/**)"
-    ],
     "defaultMode": "auto"
-  },
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ~/.claude/hooks/git-no-gpg-sign.sh",
-            "if": "Bash(git commit *)"
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "gofmt -w \"$CLAUDE_TOOL_INPUT_FILE_PATH\" && command -v goimports >/dev/null && goimports -w \"$CLAUDE_TOOL_INPUT_FILE_PATH\"",
-            "if": "Edit(*.go)"
-          },
-          {
-            "type": "command",
-            "command": "gofmt -w \"$CLAUDE_TOOL_INPUT_FILE_PATH\" && command -v goimports >/dev/null && goimports -w \"$CLAUDE_TOOL_INPUT_FILE_PATH\"",
-            "if": "Write(*.go)"
-          }
-        ]
-      }
-    ]
   },
   "statusLine": {
     "type": "command",
-    "command": "bash ~/.claude/statusline-command.sh"
+    "command": "sh ~/.claude/statusline-command.sh"
   },
   "enabledPlugins": {
-    "gopls-lsp@claude-plugins-official": false,
-    "typescript-lsp@claude-plugins-official": false,
-    "pr-review-toolkit@claude-plugins-official": true,
-    "figma@claude-plugins-official": true
+    "pr-review-toolkit@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "flatt-security-agent-skills": {
@@ -76,6 +39,7 @@
   "alwaysThinkingEnabled": true,
   "effortLevel": "medium",
   "promptSuggestionEnabled": false,
+  "theme": "dark",
   "skipDangerousModePermissionPrompt": true,
   "editorMode": "vim",
   "verbose": true,
