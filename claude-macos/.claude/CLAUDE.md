@@ -30,3 +30,5 @@ Language Essentials
   * `#!/usr/bin/env bash` + `set -euxo pipefail` is REQUIRED
   * Quote variables "${var}" is REQUIRED
   * MUST use local in functions
+  * NEVER use heredocs (e.g., `<<EOF`)
+  * For multi-line scripts, FIRST write the script to a file under `/tmp`, then execute it
