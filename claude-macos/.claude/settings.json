@@ -4,14 +4,25 @@
     "DISABLE_AUTOUPDATER": "1"
   },
   "permissions": {
+    "allow": [
+      "Bash(terraform validate)",
+      "Bash(terraform plan)"
+    ],
+    "deny": [
+      "Bash(terraform *)"
+    ],
     "defaultMode": "auto"
+  },
+  "worktree": {
+    "baseRef": "fresh"
   },
   "statusLine": {
     "type": "command",
     "command": "sh ~/.claude/statusline-command.sh"
   },
   "enabledPlugins": {
-    "pr-review-toolkit@claude-plugins-official": true
+    "pr-review-toolkit@claude-plugins-official": true,
+    "flatt-devrel-skills@flatt-security-agent-skills": true
   },
   "extraKnownMarketplaces": {
     "flatt-security-agent-skills": {
@@ -39,11 +50,13 @@
   "alwaysThinkingEnabled": true,
   "effortLevel": "medium",
   "promptSuggestionEnabled": false,
-  "theme": "dark",
+  "awaySummaryEnabled": false,
+  "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
+  "theme": "dark",
   "editorMode": "vim",
   "verbose": true,
+  "skipAutoPermissionPrompt": true,
   "useAutoModeDuringPlan": true,
-  "voiceEnabled": true,
-  "skipAutoPermissionPrompt": true
+  "voiceEnabled": true
 }

@@ -10,3 +10,8 @@
 # Load macOS-specific runtime
 eval "$(~/.local/bin/mise activate zsh)"
 eval "$(mcfly init zsh)"
+
+# >>> microsandbox >>>
+export PATH="$HOME/.microsandbox/bin:$PATH"
+export DYLD_LIBRARY_PATH="$HOME/.microsandbox/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
+# <<< microsandbox <<<
