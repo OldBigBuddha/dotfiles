@@ -16,6 +16,19 @@
   "worktree": {
     "baseRef": "fresh"
   },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/warn-claude-md-size.sh"
+          }
+        ]
+      }
+    ]
+  },
   "statusLine": {
     "type": "command",
     "command": "sh ~/.claude/statusline-command.sh"
