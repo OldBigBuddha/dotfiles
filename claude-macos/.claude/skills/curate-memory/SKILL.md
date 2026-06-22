@@ -12,8 +12,8 @@ This skill does **not** capture new session learnings — that is `/wrap-up`'s j
 ## Progressive disclosure goal
 
 `MEMORY.md` is loaded into context every session; individual files are read only when judged relevant. So:
-- **Top layer (`MEMORY.md`)** stays minimal and scannable — one terse pointer per memory, just enough to decide relevance. Group pointers under headings (by type, then topic) once the list grows.
-- **Detail layer (files)** holds exactly one fact each, read on demand.
+- **Top layer (`MEMORY.md`)** is *purely an index* — it holds only pointers (one terse hook per memory) and the headings that group them, never memory content itself. Anything that states a fact belongs in a file. Group pointers under headings (by type, then topic) once the list grows.
+- **Detail layer (files)** holds exactly one fact each, read on demand, and each file **must stay within 200 lines**. A file approaching that bound is a signal it carries more than one fact and should be split.
 Every byte in `MEMORY.md` is paid on every session; every file is paid only when recalled. Curate toward that asymmetry.
 
 ## Procedure
@@ -23,22 +23,22 @@ Every byte in `MEMORY.md` is paid on every session; every file is paid only when
 2. **Diagnose.** Flag:
    - **Duplicates / overlap** — multiple files asserting the same or nested facts
    - **Stale / contradicted** — facts a later session disproved or superseded (check dates; relative dates should already be absolute)
-   - **Overloaded files** — one file carrying several distinct facts (violates one-fact-per-file)
-   - **Weak index lines** — verbose, vague, or missing hooks in `MEMORY.md`; content leaking into the index instead of staying in files
+   - **Overloaded files** — one file carrying several distinct facts (violates one-fact-per-file), or any file exceeding 200 lines
+   - **Index pollution** — `MEMORY.md` carrying anything beyond pointers + headings (fact content, multi-line entries), or verbose / vague / missing hooks
    - **Broken graph** — `[[links]]` pointing nowhere, or related memories that should link but don't
    - **Orphans / dangling** — files absent from `MEMORY.md`, or index lines with no backing file
 
 3. **Plan the restructure.**
    - **Merge** overlapping files into one canonical file (keep the best name; redirect inbound `[[links]]`)
-   - **Split** overloaded files into focused single-fact files
+   - **Split** overloaded or over-200-line files into focused single-fact files, each well under the line cap
    - **Prune** stale/wrong/superseded files
-   - **Regroup** `MEMORY.md` under headings and tighten each pointer to a scannable one-liner hook
+   - **Regroup** `MEMORY.md` under headings, keeping it strictly an index — pointers only, each a scannable one-liner hook
    - **Repair** the `[[link]]` graph and normalize frontmatter + kebab-case names
    Preserve the substance of every still-true fact — restructuring must not lose information.
 
 4. **Confirm before applying.** Present a numbered plan of changes (merge / split / prune / rename / regroup + one-line reason each), and a one-line before/after size sense (e.g. file count, MEMORY.md line count). If the store is already clean, say so and stop. Otherwise wait for the user's go-ahead.
 
-5. **Apply.** Make the file changes, then rewrite `MEMORY.md` so every pointer matches a file and no content lives in the index itself.
+5. **Apply.** Make the file changes — keeping every file within 200 lines — then rewrite `MEMORY.md` so it is a pure index: every pointer matches a file, and no fact content lives in the index itself.
 
 ## Output
 
