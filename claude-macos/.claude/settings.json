@@ -3,19 +3,33 @@
   "env": {
     "DISABLE_AUTOUPDATER": "1"
   },
-  "permissions": {
+"permissions": {
     "allow": [
-      "Bash(terraform validate)",
-      "Bash(terraform plan)"
+      "Bash(terraform fmt*)",
+      "Bash(terraform init*)",
+      "Bash(terraform validate*)",
+      "Bash(terraform plan*)",
+      "Bash(terraform show*)",
+      "Bash(terraform output*)",
+      "Bash(terraform state list*)",
+      "Bash(terraform state show*)"
     ],
     "deny": [
-      "Bash(terraform *)"
+      "Bash(terraform apply*)",
+      "Bash(terraform destroy*)",
+      "Bash(terraform import*)",
+      "Bash(terraform taint*)",
+      "Bash(terraform untaint*)",
+      "Bash(terraform state mv*)",
+      "Bash(terraform state rm*)",
+      "Bash(terraform state push*)",
+      "Bash(terraform force-unlock*)",
+      "Bash(terraform workspace delete*)",
+      "Bash(aws *)"
     ],
     "defaultMode": "auto"
   },
-  "worktree": {
-    "baseRef": "fresh"
-  },
+  "model": "opus[1m]",
   "hooks": {
     "PostToolUse": [
       {
@@ -27,15 +41,30 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '/Users/s.yamakawa/.claude/hooks/herdr-agent-state.sh' session",
+            "timeout": 10
+          }
+        ]
+      }
     ]
+  },
+  "worktree": {
+    "baseRef": "fresh"
   },
   "statusLine": {
     "type": "command",
     "command": "sh ~/.claude/statusline-command.sh"
   },
   "enabledPlugins": {
-    "pr-review-toolkit@claude-plugins-official": true,
-    "flatt-devrel-skills@flatt-security-agent-skills": true
+    "flatt-devrel-skills@flatt-security-agent-skills": true,
+    "pr-review-toolkit@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "flatt-security-agent-skills": {
@@ -69,6 +98,7 @@
   "theme": "dark",
   "editorMode": "vim",
   "verbose": true,
+  "preferredNotifChannel": "terminal_bell",
   "skipAutoPermissionPrompt": true,
   "useAutoModeDuringPlan": true,
   "voiceEnabled": true
