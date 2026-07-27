@@ -53,6 +53,18 @@ suberu::start_agent_when_ready() {
   suberu::die "pane ${suberu_target_pane} was still not an interactive shell after ${suberu_attempt} attempts"
 }
 
+# Where a worker writes its report.
+#
+# Outside the worktree on purpose. Anything the orchestrator reads from inside a
+# worktree drags that tree's CLAUDE.md and skill manifest into its context, so a
+# report kept there would cost thousands of tokens to read -- defeating the
+# arrangement it exists to serve. Living in the state directory also means
+# `git clean -fdx` cannot delete it and the worktree needs no ignore rules.
+suberu::report_path() {
+  local -r suberu_workspace_id="$1"
+  printf '%s/reports/%s.md' "$(suberu::state_dir)" "${suberu_workspace_id}"
+}
+
 # What every pane of a workspace is running, as JSON for busy_check.py.
 suberu::pane_process_report() {
   local -r suberu_workspace_id="$1"

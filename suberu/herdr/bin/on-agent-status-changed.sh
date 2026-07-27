@@ -27,5 +27,5 @@ label="$(suberu::herdr workspace get "${workspace_id}" | suberu::json_get 'resul
 readonly label
 
 suberu::herdr notification show "Suberu: ${label:-${workspace_id}}" \
-  --body "Stopped working. Read its .suberu/report.md." \
+  --body "Stopped working. Report: $(suberu::report_path "${workspace_id}")" \
   --sound request

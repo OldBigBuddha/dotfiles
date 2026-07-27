@@ -57,7 +57,10 @@ The brief template covers the standing parts; the goal supplies the specifics.
 ## Receiving work
 
 A worker that stops triggers a notification. Read its
-`<worktree>/.suberu/report.md` and nothing else. If the report is inadequate,
+report — `fleet-status.sh` prints where they live — and nothing else. Do not
+read anything inside the worktree itself: that makes Claude Code load the tree's
+`CLAUDE.md` and skill manifest, which costs more context than the report saves.
+If the report is inadequate,
 ask that worker to improve it -- do not go read its source to compensate, which
 defeats the entire arrangement.
 

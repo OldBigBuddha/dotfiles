@@ -19,17 +19,16 @@ stay compatible with Python 3.9 and import nothing outside the stdlib.
 """
 
 import json
-import os
 import shlex
 import sys
 
 import suberu_git
 
-# Files that exist precisely to be read by the orchestrator. Everything else
-# inside a worktree is the worker's business.
-ALLOWED_BASENAMES = frozenset(("report.md", "CLAUDE.local.md", "CLAUDE.md"))
-ALLOWED_SUFFIXES = (".plan.md",)
-ALLOWED_DIR_MARKER = "/.suberu/"
+# A worktree has no readable files, not even summary-shaped ones. Reading any
+# path under one makes Claude Code load that tree's CLAUDE.md and its entire
+# skill manifest, so a four-line summary arrives with thousands of tokens
+# attached -- the pollution this guard exists to prevent, through the hole meant
+# to be its convenience. Workers report outside the worktree instead.
 
 # Tool inputs that name a filesystem path.
 PATH_FIELDS = ("file_path", "path", "notebook_path")
@@ -45,19 +44,11 @@ FILE_READERS = frozenset(
 SEGMENT_SEPARATORS = ("&&", "||", ";", "|", "\n")
 
 DELEGATE_HINT = (
-    "The orchestrator holds fleet state, not implementation detail. Ask that "
-    "worktree's agent, read its .suberu/report.md, or spawn a throwaway subagent "
-    "for a one-off investigation."
+    "The orchestrator holds fleet state, not implementation detail. Read the "
+    "worker's report under the Suberu state directory (fleet-status.sh points at "
+    "it), ask that worktree's agent, or spawn a throwaway subagent for a one-off "
+    "investigation."
 )
-
-
-def is_summary(path):
-    """True for files written to be consumed by the orchestrator."""
-    if os.path.basename(path) in ALLOWED_BASENAMES:
-        return True
-    if ALLOWED_DIR_MARKER in path + "/":
-        return True
-    return any(path.endswith(suffix) for suffix in ALLOWED_SUFFIXES)
 
 
 def check_path(facts, cwd, raw_path):
@@ -66,8 +57,6 @@ def check_path(facts, cwd, raw_path):
         return None
     path = suberu_git.resolve(cwd, raw_path)
     if not facts.contains_worker_material(path):
-        return None
-    if is_summary(path):
         return None
     return "`{}` belongs to a worker's worktree. {}".format(raw_path, DELEGATE_HINT)
 

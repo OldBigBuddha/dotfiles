@@ -47,9 +47,19 @@ routes in, four closures:
 | Route | Closure |
 | --- | --- |
 | Reading worker source | `guard-context.sh` denies reads into any worktree, except files written as summaries |
-| Reading raw agent scrollback | Same guard denies `herdr agent read` and `herdr pane read`; workers report through `.suberu/report.md` instead |
+| Reading raw agent scrollback | Same guard denies `herdr agent read` and `herdr pane read`; workers report to a file in the state directory instead |
 | Polling for status | Replaced by the `pane.agent_status_changed` event |
 | Losing state and re-deriving it from logs | `inject-fleet-status.sh` restores it on session start and after compaction |
+
+**Reports live outside the worktree**, at
+`HERDR_PLUGIN_STATE_DIR/reports/<workspace>.md`. This was learned the hard way:
+reading *any* file under a worktree makes Claude Code load that tree's
+`CLAUDE.md` and its entire skill manifest, so a four-line summary arrived with
+thousands of tokens attached. An allowlist for summary-shaped files inside a
+worktree was therefore a hole rather than a convenience, and no longer exists —
+nothing under a worktree is readable by the orchestrator. Keeping reports out of
+the tree also means `git clean -fdx` cannot erase them and the worktree needs no
+ignore rules of Suberu's making.
 
 Investigations that a report cannot answer go to a **throwaway subagent**: the
 orchestrator gets the conclusion and none of the search. The axis is routine
@@ -133,10 +143,10 @@ command here that destroys work:
   at its final step, and nothing warned: git state cannot see a running process.
   The judgement is inverted on purpose — unrecognised means busy, so a new build
   tool is never silently safe to kill.
-- **Uncommitted work.** git's own refusal, which only means anything because
-  Suberu's `.suberu/` directory ignores itself. Left visible it would dirty every
-  worktree, `--force` would become the habit, and the check would stop
-  protecting the work it exists for.
+- **Uncommitted work.** git's own refusal. It means something only because
+  Suberu writes nothing into the worktree at all; while reports lived there,
+  every finished task needed `--force` and the habit defeated the check for the
+  case it exists for.
 
 `--force` overrides all three.
 

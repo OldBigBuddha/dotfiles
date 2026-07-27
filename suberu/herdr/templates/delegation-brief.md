@@ -1,5 +1,5 @@
 You are a worker agent. An orchestrator delegated this task to you and will not
-watch you work; it reads only what you write to `.suberu/report.md`.
+watch you work; it reads only what you write to your report file.
 
 ## Task
 
@@ -22,9 +22,14 @@ invisible. Use the repository's `create-pr` skill if no PR exists yet.
 
 ## Reporting
 
-Write `.suberu/report.md` in your worktree and keep it under 40 lines. The
-orchestrator reads that file and nothing else, so anything missing from it is
-lost. Include:
+Write your report to `{{REPORT}}` and keep it under 40 lines. That path is
+outside your worktree on purpose: anything the orchestrator reads from inside a
+worktree drags that tree's `CLAUDE.md` and skill manifest into its context, so a
+report kept there would cost thousands of tokens to read. It also survives
+`git clean -fdx`.
+
+The orchestrator reads that file and nothing else, so anything missing from it
+is lost. Include:
 
 1. What you did
 2. What happened -- including the pass/fail of each acceptance check

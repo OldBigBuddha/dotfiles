@@ -81,12 +81,16 @@ readonly pane_id
 suberu::start_agent_when_ready "${slug}" "${pane_id}"
 
 # Render the brief with the task's own facts before handing it over.
+report_path="$(suberu::report_path "${workspace_id}")"
+readonly report_path
+mkdir -p "$(dirname "${report_path}")"
+
 brief="$(/usr/bin/python3 -c 'import sys
 template = open(sys.argv[1]).read()
-for key, value in zip(("{{GOAL}}", "{{WORKTREE}}", "{{BRANCH}}"), sys.argv[2:]):
+for key, value in zip(("{{GOAL}}", "{{WORKTREE}}", "{{BRANCH}}", "{{REPORT}}"), sys.argv[2:]):
     template = template.replace(key, value)
 sys.stdout.write(template)' \
-  "${plugin_root}/templates/delegation-brief.md" "${goal}" "${worktree_path}" "${branch}")"
+  "${plugin_root}/templates/delegation-brief.md" "${goal}" "${worktree_path}" "${branch}" "${report_path}")"
 readonly brief
 
 # No --wait: the status event handler reports completion, so blocking here

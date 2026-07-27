@@ -12,3 +12,7 @@ readonly bin_dir
 source "${bin_dir}/lib.sh"
 
 suberu::herdr api snapshot | /usr/bin/python3 "${bin_dir}/render_fleet.py" "$@"
+
+# Named rather than inlined: the reports are the orchestrator's only window into
+# what workers did, and it cannot discover them by looking inside a worktree.
+printf 'reports: %s/reports/<workspace>.md\n' "$(suberu::state_dir)"

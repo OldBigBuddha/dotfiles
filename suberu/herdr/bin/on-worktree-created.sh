@@ -29,17 +29,10 @@ fi
   "${plugin_root}/templates/worker-settings.local.json" \
   "${checkout_path}/.claude/settings.local.json"
 
-# The report is the only channel back to the orchestrator, so the directory
-# exists from the start rather than depending on the worker to create it.
-#
-# It ignores itself. Left visible, Suberu's own bookkeeping would make every
-# worktree permanently dirty, `git worktree remove` would refuse every finished
-# task, and `task-finish.sh --force` would become the habit -- at which point
-# the check meant to protect a worker's uncommitted work protects nothing. A
-# `.gitignore` holding `*` covers the directory and itself, so this needs no
-# entry in the repository's shared exclude file.
-mkdir -p "${checkout_path}/.suberu"
-printf '*\n' >"${checkout_path}/.suberu/.gitignore"
+# Nothing else is written into the worktree. Reports live in the Suberu state
+# directory: a report kept here would make the worktree permanently dirty, could
+# be erased by `git clean -fdx`, and -- worst -- would cost the orchestrator
+# that tree's CLAUDE.md and skill manifest every time it read one.
 
 # settings.local.json belongs to Claude Code, not to Suberu, so its exclusion is
 # the repository's or the user's to declare. Where neither does, the worktree

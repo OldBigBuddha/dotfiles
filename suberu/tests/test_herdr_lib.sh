@@ -110,8 +110,17 @@ seed_worktree() {
 seed_worktree >/dev/null
 assert_contains "$(cat "${seeded_wt}/.claude/settings.local.json")" 'terraform apply' \
   "seeding writes the permission baseline"
-assert_equals "0" "$(git -C "${seeded_wt}" status --porcelain | grep -c '\.suberu' | tr -d ' ')" \
-  "the report directory does not dirty the worktree"
+assert_equals "" "$(git -C "${seeded_wt}" status --porcelain)" \
+  "seeding leaves the worktree clean"
+
+# The report lives in the state directory, not the worktree. Reading anything
+# inside a worktree costs the orchestrator that tree's CLAUDE.md and skill
+# manifest, so a report kept there defeats its own purpose.
+report="$(HERDR_PLUGIN_STATE_DIR="${scratch}/state" suberu::report_path w9)"
+readonly report
+assert_equals "${scratch}/state/reports/w9.md" "${report}" "reports live in the state directory"
+assert_equals "0" "$(printf '%s' "${report}" | grep -c "${seeded_wt}")" \
+  "the report path is outside every worktree"
 
 # Suberu owns .suberu and hides it itself; settings.local.json belongs to Claude
 # Code and is normally ignored repo- or user-wide. Where it is not, say so

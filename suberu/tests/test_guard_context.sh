@@ -66,11 +66,17 @@ assert_denied "bare-root orchestrator reads worker source" \
 assert_denied "bare-root orchestrator cats worker source" \
   "${bare_root}" Bash command "cat ${bare_wt}/src/main.go"
 
-# --- summaries exist to be read by the orchestrator ---
-assert_allowed "orchestrator reads a worker report" \
+# --- nothing inside a worktree is readable, however summary-shaped ---
+# Reading any file under a worktree makes Claude Code load that tree's
+# CLAUDE.md and its entire skill manifest, so a four-line summary arrives with
+# thousands of tokens attached. An allowlist here is a hole, not a convenience;
+# reports are written outside the worktree instead.
+assert_denied "orchestrator reads a report left inside a worktree" \
   "${normal_root}" Read file_path "${normal_wt}/.suberu/report.md"
-assert_allowed "orchestrator reads CLAUDE.local.md" \
+assert_denied "orchestrator reads CLAUDE.local.md" \
   "${normal_root}" Read file_path "${normal_wt}/CLAUDE.local.md"
+assert_denied "orchestrator reads a worktree's CLAUDE.md" \
+  "${normal_root}" Read file_path "${normal_wt}/CLAUDE.md"
 
 # --- anything outside the repository is unrelated to fleet hygiene ---
 assert_allowed "orchestrator reads its own dotfiles" \
