@@ -42,6 +42,9 @@ When you run `stow package-name`, files are symlinked: `~/dotfiles/package-name/
 - **git-macos**: macOS-specific git settings (1Password SSH signing)
 - **zsh-macos**: Shell configuration (.zshrc, .zshenv, .zprofile) - sources zsh
 
+**Not a stow package:**
+- **suberu**: multi-agent orchestration harness — a Herdr plugin plus a Claude Code plugin. Registered with `herdr plugin link` and `/plugin marketplace add`, never by symlink, so `stow` must not be run against it. See `suberu/README.md`.
+
 > **Adding OS-specific config**: When a common package needs OS-specific settings, create `xxx-macos` (or `xxx-linux`) with only the OS-specific parts. Use include/source to load them. See git/git-macos as reference.
 
 ## Common Commands
