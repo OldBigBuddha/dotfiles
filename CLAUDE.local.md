@@ -132,3 +132,43 @@ alone: repositories with no commits, detached-HEAD worktrees, the bare layout,
 and `git worktree list --porcelain` ordering, whose line-based parsing already
 survived spaces. `merge_settings` was already correct about the thing it was
 most suspected of — malformed JSON aborts and leaves the file byte-identical.
+
+### Teardown safety (2026-07-27, after a live incident)
+
+Closing a workspace interrupted a fourteen-minute production image build at its
+final step. Nothing warned. The damage was limited only by luck: packer had
+already created `debian-run-prod-0-53-0`, its process reparented to init rather
+than dying with the pane, and its output was redirected to a file, so the image
+is READY with correct labels and GCP holds no orphans. What was lost is packer's
+own sign-off and the finalised production manifest.
+
+Two defects behind it, both the same shape as the guard bugs — a check that
+reaches no decision and says nothing.
+
+**Teardown could not see a running process.** It looked only at git state, and a
+build leaves no trace there. `task-finish.sh` now inspects every pane's
+foreground processes through `herdr pane process-info` and refuses while
+anything unrecognised is running, naming it. The classification is inverted
+deliberately: unrecognised counts as busy, so a build tool nobody listed is
+never silently safe to kill.
+
+**Teardown would remove a checkout it never created.** Pointed at a workspace
+opened by hand it would have deleted that worktree. It now requires a record
+under `HERDR_PLUGIN_STATE_DIR/tasks` and points at `herdr workspace close`
+otherwise. Verified live against a `worktree open` workspace, which is refused.
+
+**`.suberu/` made the third check meaningless.** Suberu's own report directory
+left every worktree permanently dirty, so `git worktree remove` refused every
+finished task and `--force` became routine — at which point the check meant to
+protect uncommitted work protected nothing. The directory now carries a
+`.gitignore` holding `*`, which covers itself and needs no entry in the
+repository's shared exclude file. Per-worktree `info/exclude` was measured first
+and does not work: git reads that file only from the common directory.
+`settings.local.json` belongs to Claude Code, not Suberu, so an unignored one is
+reported rather than silently excluded on the repository's behalf.
+
+Worth keeping: closing a herdr workspace is far less destructive than it looks.
+Processes reparent to init and survive, output already redirected to a file is
+untouched, and the agent's session can be restored with
+`herdr agent start ... -- --resume <session-id>`, which puts the worker back
+with its context intact.

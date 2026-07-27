@@ -94,6 +94,48 @@ assert_equals "1" "${broken_rc}" "unreadable settings abort the seeding"
 assert_equals '{"permissions": {"allow": ["Read"' "$(cat "${scratch}/broken.json")" \
   "unreadable settings are left untouched"
 
+# --- seeding must not leave the worktree dirty ---
+# Otherwise every finished task needs `task-finish.sh --force`, so the operator
+# learns to always pass it and a worktree holding real uncommitted work is
+# discarded just as readily. A check that is always bypassed protects nothing.
+read -r _ seeded_wt <<<"$(fixture_normal_repo "${scratch}/seeded")"
+readonly seeded_wt
+# Echoes the handler's diagnostics; its stdout is trace output, not a result.
+seed_worktree() {
+  { HERDR_PLUGIN_ROOT="${herdr_dir}" \
+    HERDR_PLUGIN_EVENT_JSON="{\"data\":{\"worktree\":{\"path\":\"${seeded_wt}\"}}}" \
+    bash "${herdr_dir}/bin/on-worktree-created.sh" >/dev/null; } 2>&1
+}
+
+seed_worktree >/dev/null
+assert_contains "$(cat "${seeded_wt}/.claude/settings.local.json")" 'terraform apply' \
+  "seeding writes the permission baseline"
+assert_equals "0" "$(git -C "${seeded_wt}" status --porcelain | grep -c '\.suberu' | tr -d ' ')" \
+  "the report directory does not dirty the worktree"
+
+# Suberu owns .suberu and hides it itself; settings.local.json belongs to Claude
+# Code and is normally ignored repo- or user-wide. Where it is not, say so
+# rather than quietly writing to the repository's shared exclude file.
+git -C "${seeded_wt}" config core.excludesFile /dev/null
+assert_contains "$(seed_worktree)" "settings.local.json" \
+  "an unignored settings.local.json is reported, not silently left dirty"
+
+# --- teardown must not fire blind ---
+readonly idle_pane='[{"pane_id":"w9:p1","foreground_processes":[{"argv0":"caffeinate","cmdline":"caffeinate -i"},{"argv0":"claude","cmdline":"claude"}]}]'
+readonly busy_pane='[{"pane_id":"w9:p2","foreground_processes":[{"argv0":"zsh","cmdline":"zsh"},{"argv0":"packer","cmdline":"packer build -var environment=production"}]}]'
+
+assert_equals "" "$(printf '%s' "${idle_pane}" | /usr/bin/python3 "${herdr_dir}/bin/busy_check.py")" \
+  "an idle agent pane is not busy"
+assert_contains "$(printf '%s' "${busy_pane}" | /usr/bin/python3 "${herdr_dir}/bin/busy_check.py")" \
+  "packer build" "a running build is reported as busy"
+
+# A workspace Suberu did not create must never be torn down by it: task-finish
+# removes the checkout, so `v2` or any hand-made worktree would go with it.
+unowned_rc=0
+HERDR_PLUGIN_STATE_DIR="${scratch}/empty-state" \
+  bash "${herdr_dir}/bin/task-finish.sh" wZZ >/dev/null 2>&1 || unowned_rc=$?
+assert_equals "1" "${unowned_rc}" "a workspace Suberu does not own is refused"
+
 # --- notify on a real transition only; the event carries no previous status ---
 readonly state_dir="${scratch}/state"
 transition() {

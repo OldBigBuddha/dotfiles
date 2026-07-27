@@ -28,6 +28,31 @@ readonly workspace_id force
 
 [[ -n "${workspace_id}" ]] || suberu::die "usage: task-finish.sh [--force] <workspace-id>"
 
+state_file="$(suberu::state_dir)/tasks/${workspace_id}.json"
+readonly state_file
+
+# Only tear down what Suberu created. This command removes a checkout, so
+# pointed at a workspace someone opened by hand -- the repository's main
+# worktree, say -- it would delete work Suberu never had any claim to.
+if [[ ! -f "${state_file}" ]]; then
+  suberu::die "${workspace_id} is not a Suberu task (no record in $(suberu::state_dir)/tasks); close it with \`herdr workspace close\` instead"
+fi
+
+# A pane can be running something that leaves no trace in git state. Tearing
+# down blind once killed a fourteen-minute production image build at its final
+# step, and nothing warned.
+if [[ -z "${force}" ]]; then
+  busy="$(suberu::pane_process_report "${workspace_id}" |
+    /usr/bin/python3 "${bin_dir}/busy_check.py")"
+  readonly busy
+
+  if [[ -n "${busy}" ]]; then
+    suberu::log "${workspace_id} still has work running:"
+    printf '%s\n' "${busy}" >&2
+    suberu::die "refusing to tear it down; wait for it to finish, or re-run with --force to kill it"
+  fi
+fi
+
 # Herdr refuses to drop a checkout holding uncommitted or untracked work. That
 # refusal is the point: the worker's report and any unpushed edits live there,
 # and discarding them silently would be worse than leaving the workspace open.

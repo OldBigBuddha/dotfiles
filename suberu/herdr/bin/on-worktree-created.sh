@@ -31,6 +31,24 @@ fi
 
 # The report is the only channel back to the orchestrator, so the directory
 # exists from the start rather than depending on the worker to create it.
+#
+# It ignores itself. Left visible, Suberu's own bookkeeping would make every
+# worktree permanently dirty, `git worktree remove` would refuse every finished
+# task, and `task-finish.sh --force` would become the habit -- at which point
+# the check meant to protect a worker's uncommitted work protects nothing. A
+# `.gitignore` holding `*` covers the directory and itself, so this needs no
+# entry in the repository's shared exclude file.
 mkdir -p "${checkout_path}/.suberu"
+printf '*\n' >"${checkout_path}/.suberu/.gitignore"
+
+# settings.local.json belongs to Claude Code, not to Suberu, so its exclusion is
+# the repository's or the user's to declare. Where neither does, the worktree
+# will read as dirty for the same reason -- say so instead of quietly writing to
+# the repository's shared exclude file on someone else's behalf.
+if ! git -C "${checkout_path}" check-ignore -q .claude/settings.local.json; then
+  suberu::log "warning: ${checkout_path}/.claude/settings.local.json is not ignored," \
+    "so this worktree will read as dirty and task-finish will need --force." \
+    "Add it to the repository's .gitignore or your global core.excludesFile."
+fi
 
 suberu::log "seeded ${checkout_path}"

@@ -53,6 +53,16 @@ suberu::start_agent_when_ready() {
   suberu::die "pane ${suberu_target_pane} was still not an interactive shell after ${suberu_attempt} attempts"
 }
 
+# What every pane of a workspace is running, as JSON for busy_check.py.
+suberu::pane_process_report() {
+  local -r suberu_workspace_id="$1"
+  local suberu_bin_dir
+  suberu_bin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+  suberu::herdr pane list |
+    /usr/bin/python3 "${suberu_bin_dir}/pane_report.py" "${suberu_workspace_id}"
+}
+
 suberu::log() {
   printf 'suberu: %s\n' "$*" >&2
 }

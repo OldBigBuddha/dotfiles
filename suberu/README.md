@@ -120,6 +120,26 @@ no arguments.
 `task-finish.sh` removes the checkout and keeps the branch. A checkout is
 reproducible; commits that exist only in one are not.
 
+Teardown refuses three ways before it removes anything, because it is the one
+command here that destroys work:
+
+- **Not a Suberu task.** A workspace with no record under
+  `HERDR_PLUGIN_STATE_DIR/tasks` is refused outright. Aimed at a workspace
+  someone opened by hand this command would delete a checkout Suberu never
+  created; `herdr workspace close` is the right tool there.
+- **Something is running.** Every pane's foreground processes are inspected and
+  anything not recognised as idle blocks the teardown, naming the command.
+  Closing a workspace once interrupted a fourteen-minute production image build
+  at its final step, and nothing warned: git state cannot see a running process.
+  The judgement is inverted on purpose — unrecognised means busy, so a new build
+  tool is never silently safe to kill.
+- **Uncommitted work.** git's own refusal, which only means anything because
+  Suberu's `.suberu/` directory ignores itself. Left visible it would dirty every
+  worktree, `--force` would become the habit, and the check would stop
+  protecting the work it exists for.
+
+`--force` overrides all three.
+
 ## Tests
 
 ```
