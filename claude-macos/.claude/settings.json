@@ -3,7 +3,7 @@
   "env": {
     "DISABLE_AUTOUPDATER": "1"
   },
-"permissions": {
+  "permissions": {
     "allow": [
       "Bash(terraform fmt*)",
       "Bash(terraform init*)",
@@ -64,13 +64,20 @@
   },
   "enabledPlugins": {
     "flatt-devrel-skills@flatt-security-agent-skills": true,
-    "pr-review-toolkit@claude-plugins-official": true
+    "pr-review-toolkit@claude-plugins-official": true,
+    "suberu@suberu": true
   },
   "extraKnownMarketplaces": {
     "flatt-security-agent-skills": {
       "source": {
         "source": "github",
         "repo": "flatt-jp/agent-skills"
+      }
+    },
+    "suberu": {
+      "source": {
+        "source": "directory",
+        "path": "/Users/s.yamakawa/work_dir/suberu/claude"
       }
     }
   },
