@@ -16,6 +16,10 @@
 # Claude Code local settings (only at repo root, not stow packages)
 /.claude/
 
+# Suberu worker reports. Worktrees Suberu creates hide these themselves; this
+# covers a checkout where an agent was started by hand.
+.suberu/
+
 # Logs
 *.log
 
