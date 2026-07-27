@@ -44,17 +44,31 @@ readonly branch
 # The parent workspace is the one holding the bare repository. Herdr refuses
 # worktree creation from a linked worktree's workspace, so this is resolved
 # rather than assumed from whatever happens to be focused.
+#
+# It is matched against the repository this command was run in. Taking the
+# first root workspace in the snapshot instead was wrong the moment a second
+# repository was open: a monorepo task would have had its worktree created in
+# whichever project happened to come first.
+session_repo_key="$(suberu::repo_key ".")" ||
+  suberu::die "task-start must be run from inside the repository the task belongs to"
+readonly session_repo_key
+
 snapshot="$(suberu::herdr api snapshot)"
 readonly snapshot
-parent_workspace="$(printf '%s' "${snapshot}" | /usr/bin/python3 -c 'import json,sys
+parent_workspace="$(printf '%s' "${snapshot}" | /usr/bin/python3 -c 'import json,os,sys
 snapshot = json.load(sys.stdin)["result"]["snapshot"]
+wanted = os.path.realpath(sys.argv[1])
 for workspace in snapshot.get("workspaces", []):
     worktree = workspace.get("worktree") or {}
-    if worktree.get("repo_root") and not worktree.get("is_linked_worktree", True):
-        print(workspace["workspace_id"], worktree["repo_root"])
-        break')"
+    if worktree.get("is_linked_worktree", True) or not worktree.get("repo_root"):
+        continue
+    if os.path.realpath(worktree.get("repo_key") or "") != wanted:
+        continue
+    print(workspace["workspace_id"], worktree["repo_root"])
+    break' "${session_repo_key}")"
 readonly parent_workspace
-[[ -n "${parent_workspace}" ]] || suberu::die "no workspace is open on the repository root"
+[[ -n "${parent_workspace}" ]] ||
+  suberu::die "no workspace is open on the root of ${session_repo_key}; open one before delegating"
 
 readonly parent_id="${parent_workspace%% *}"
 readonly repo_root="${parent_workspace#* }"
@@ -81,7 +95,7 @@ readonly pane_id
 suberu::start_agent_when_ready "${slug}" "${pane_id}"
 
 # Render the brief with the task's own facts before handing it over.
-report_path="$(suberu::report_path "${workspace_id}")"
+report_path="$(suberu::report_path "${workspace_id}" "${repo_root}")"
 readonly report_path
 mkdir -p "$(dirname "${report_path}")"
 
@@ -98,7 +112,7 @@ readonly brief
 suberu::herdr agent prompt "${slug}" "${brief}" >/dev/null
 
 # Tokens are display-only and expire; the durable record is on disk.
-state_file="$(suberu::state_dir)/tasks/${workspace_id}.json"
+state_file="$(suberu::task_state_path "${workspace_id}" "${repo_root}")"
 readonly state_file
 mkdir -p "$(dirname "${state_file}")"
 /usr/bin/python3 -c 'import json,sys

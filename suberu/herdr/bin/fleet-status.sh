@@ -11,8 +11,21 @@ readonly bin_dir
 # shellcheck source=./lib.sh
 source "${bin_dir}/lib.sh"
 
-suberu::herdr api snapshot | /usr/bin/python3 "${bin_dir}/render_fleet.py" "$@"
+# Scoped to the repository this was run in: an orchestrator manages one
+# project, and workspaces belonging to another are not its business. A cwd
+# outside any repository has no project to scope to, so it sees everything.
+scope=()
+if repo_key="$(suberu::repo_key ".")"; then
+  scope=(--repo-key "${repo_key}")
+fi
+readonly repo_key
+
+suberu::herdr api snapshot |
+  /usr/bin/python3 "${bin_dir}/render_fleet.py" ${scope[@]+"${scope[@]}"} "$@"
 
 # Named rather than inlined: the reports are the orchestrator's only window into
 # what workers did, and it cannot discover them by looking inside a worktree.
-printf 'reports: %s/reports/<workspace>.md\n' "$(suberu::state_dir)"
+if [[ -n "${repo_key}" ]]; then
+  printf 'reports: %s/reports/%s/<workspace>.md\n' \
+    "$(suberu::state_dir)" "$(suberu::repo_slug ".")"
+fi

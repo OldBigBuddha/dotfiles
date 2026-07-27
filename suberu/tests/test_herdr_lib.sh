@@ -113,14 +113,31 @@ assert_contains "$(cat "${seeded_wt}/.claude/settings.local.json")" 'terraform a
 assert_equals "" "$(git -C "${seeded_wt}" status --porcelain)" \
   "seeding leaves the worktree clean"
 
+# --- one state namespace per repository ---
+# The state directory is shared by every repository an orchestrator is opened
+# on, so a flat namespace would mix two projects' reports together and let one
+# orchestrator tear down the other's tasks.
+assert_equals "$(cd "${fx_bare_root}" && pwd -P)" "$(suberu::repo_key "${fx_bare_root}")" \
+  "a repository is identified by its git common directory"
+assert_equals "bare" "$(suberu::repo_slug "${fx_bare_root}")" \
+  "the bare layout is named after the directory its worktrees sit in"
+assert_equals "normal" "$(suberu::repo_slug "${fx_normal_root}")" \
+  "the conventional layout is named after the repository root"
+
 # The report lives in the state directory, not the worktree. Reading anything
 # inside a worktree costs the orchestrator that tree's CLAUDE.md and skill
 # manifest, so a report kept there defeats its own purpose.
-report="$(HERDR_PLUGIN_STATE_DIR="${scratch}/state" suberu::report_path w9)"
+report="$(HERDR_PLUGIN_STATE_DIR="${scratch}/state" suberu::report_path w9 "${fx_bare_root}")"
 readonly report
-assert_equals "${scratch}/state/reports/w9.md" "${report}" "reports live in the state directory"
+assert_equals "${scratch}/state/reports/bare/w9.md" "${report}" \
+  "reports live in the state directory, under their repository"
 assert_equals "0" "$(printf '%s' "${report}" | grep -c "${seeded_wt}")" \
   "the report path is outside every worktree"
+
+task_state="$(HERDR_PLUGIN_STATE_DIR="${scratch}/state" suberu::task_state_path w9 "${fx_bare_root}")"
+readonly task_state
+assert_equals "${scratch}/state/tasks/bare/w9.json" "${task_state}" \
+  "task records are namespaced by repository too"
 
 # Suberu owns .suberu and hides it itself; settings.local.json belongs to Claude
 # Code and is normally ignored repo- or user-wide. Where it is not, say so

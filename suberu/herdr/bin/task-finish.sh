@@ -28,14 +28,17 @@ readonly workspace_id force
 
 [[ -n "${workspace_id}" ]] || suberu::die "usage: task-finish.sh [--force] <workspace-id>"
 
-state_file="$(suberu::state_dir)/tasks/${workspace_id}.json"
+# Task records are namespaced by repository, and this command is run from the
+# repository whose task is being finished -- which is what stops one project's
+# orchestrator from tearing down another project's checkout.
+state_file="$(suberu::task_state_path "${workspace_id}" ".")"
 readonly state_file
 
 # Only tear down what Suberu created. This command removes a checkout, so
 # pointed at a workspace someone opened by hand -- the repository's main
 # worktree, say -- it would delete work Suberu never had any claim to.
 if [[ ! -f "${state_file}" ]]; then
-  suberu::die "${workspace_id} is not a Suberu task (no record in $(suberu::state_dir)/tasks); close it with \`herdr workspace close\` instead"
+  suberu::die "${workspace_id} is not a Suberu task of this repository (no record at ${state_file}); close it with \`herdr workspace close\` instead"
 fi
 
 # A pane can be running something that leaves no trace in git state. Tearing
@@ -63,8 +66,6 @@ if ! suberu::herdr worktree remove --workspace "${workspace_id}" ${force:+"${for
   suberu::die "could not remove the worktree for ${workspace_id}"
 fi
 
-state_file="$(suberu::state_dir)/tasks/${workspace_id}.json"
-readonly state_file
 rm -f "${state_file}"
 
 suberu::log "finished ${workspace_id}; its branch is untouched"

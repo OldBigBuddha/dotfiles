@@ -53,6 +53,39 @@ suberu::start_agent_when_ready() {
   suberu::die "pane ${suberu_target_pane} was still not an interactive shell after ${suberu_attempt} attempts"
 }
 
+# How a repository is identified: its git common directory, which is the same
+# key Herdr reports for a workspace's worktree. Every checkout of a repository
+# answers with the same path, which is what makes it usable as an identity --
+# a checkout path would not be, since one repository has many.
+suberu::repo_key() {
+  local -r suberu_repo_path="$1"
+  local suberu_common_dir
+
+  suberu_common_dir="$(cd "${suberu_repo_path}" 2>/dev/null && git rev-parse --git-common-dir 2>/dev/null)" ||
+    return 1
+  [[ -n "${suberu_common_dir}" ]] || return 1
+
+  if [[ "${suberu_common_dir}" != /* ]]; then
+    suberu_common_dir="${suberu_repo_path}/${suberu_common_dir}"
+  fi
+  (cd "${suberu_common_dir}" && pwd -P) 2>/dev/null || return 1
+}
+
+# The name a repository's state is filed under: the directory its worktrees sit
+# in, which reads as the project name in both layouts. Two repositories of the
+# same name under different parents collide, which is accepted -- by any name a
+# human would use for them they are the same project.
+#
+# Only shell built-ins here: `basename` is no more guaranteed to be on the PATH
+# Herdr hands a plugin command than `jq` is.
+suberu::repo_slug() {
+  local -r suberu_repo_path="$1"
+  local suberu_home
+
+  suberu_home="$(suberu::worktree_home "${suberu_repo_path}")"
+  printf '%s' "${suberu_home##*/}"
+}
+
 # Where a worker writes its report.
 #
 # Outside the worktree on purpose. Anything the orchestrator reads from inside a
@@ -60,9 +93,24 @@ suberu::start_agent_when_ready() {
 # report kept there would cost thousands of tokens to read -- defeating the
 # arrangement it exists to serve. Living in the state directory also means
 # `git clean -fdx` cannot delete it and the worktree needs no ignore rules.
+#
+# Namespaced by repository because one orchestrator manages one repository: a
+# shared directory would show it reports for work it has no view of.
 suberu::report_path() {
   local -r suberu_workspace_id="$1"
-  printf '%s/reports/%s.md' "$(suberu::state_dir)" "${suberu_workspace_id}"
+  local -r suberu_repo_path="$2"
+  printf '%s/reports/%s/%s.md' \
+    "$(suberu::state_dir)" "$(suberu::repo_slug "${suberu_repo_path}")" "${suberu_workspace_id}"
+}
+
+# The durable record that a workspace is a Suberu task. Namespaced alongside the
+# reports, so an orchestrator cannot mistake another repository's task for one
+# of its own and tear the checkout down.
+suberu::task_state_path() {
+  local -r suberu_workspace_id="$1"
+  local -r suberu_repo_path="$2"
+  printf '%s/tasks/%s/%s.json' \
+    "$(suberu::state_dir)" "$(suberu::repo_slug "${suberu_repo_path}")" "${suberu_workspace_id}"
 }
 
 # What every pane of a workspace is running, as JSON for busy_check.py.

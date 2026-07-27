@@ -52,7 +52,8 @@ routes in, four closures:
 | Losing state and re-deriving it from logs | `inject-fleet-status.sh` restores it on session start and after compaction |
 
 **Reports live outside the worktree**, at
-`HERDR_PLUGIN_STATE_DIR/reports/<workspace>.md`. This was learned the hard way:
+`HERDR_PLUGIN_STATE_DIR/reports/<repository>/<workspace>.md`. This was learned
+the hard way:
 reading *any* file under a worktree makes Claude Code load that tree's
 `CLAUDE.md` and its entire skill manifest, so a four-line summary arrived with
 thousands of tokens attached. An allowlist for summary-shaped files inside a
@@ -84,6 +85,29 @@ is asked of git.
 
 Both a conventional repository and a textbook bare one are covered, and both are
 exercised by the test suite against real repositories.
+
+- **Which repository a workspace belongs to**: its git common directory, the
+  same key Herdr reports. Every checkout of a repository answers with the same
+  path, which is what makes it an identity; a checkout path is not, since one
+  repository has many.
+
+## One orchestrator, one repository
+
+Suberu is installed globally, so its hooks fire in every directory, but the
+session's working directory decides what it manages. The role is derived from
+it, and so is the fleet: `fleet-status` and the session-start injection scope
+the workspace list to the repository the session sits in, and reports and task
+records are filed per repository.
+
+Attribution has two stages, and the second one is the point. Herdr records a
+`worktree` for the workspaces it created and none for a workspace someone opened
+by hand, so filtering on that field alone would hide exactly the hand-opened
+workspaces — the ones most likely to carry an owner marker asking that they be
+left alone. When it is missing, the panes' working directory is put to git
+instead. A workspace neither stage can place is not shown.
+
+A session outside any repository has no project to scope to and sees the whole
+fleet unfiltered, which is a more honest answer than an empty list.
 
 When git cannot be consulted at all, the guards emit a `systemMessage` warning
 rather than staying silent. A guardrail that cannot tell must say so: an earlier
@@ -134,7 +158,9 @@ Teardown refuses three ways before it removes anything, because it is the one
 command here that destroys work:
 
 - **Not a Suberu task.** A workspace with no record under
-  `HERDR_PLUGIN_STATE_DIR/tasks` is refused outright. Aimed at a workspace
+  `HERDR_PLUGIN_STATE_DIR/tasks/<repository>` is refused outright — including a
+  task belonging to a different repository, which this orchestrator has no view
+  of and therefore no business destroying. Aimed at a workspace
   someone opened by hand this command would delete a checkout Suberu never
   created; `herdr workspace close` is the right tool there.
 - **Something is running.** Every pane's foreground processes are inspected and
