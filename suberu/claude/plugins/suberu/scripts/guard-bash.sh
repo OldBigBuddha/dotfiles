@@ -9,7 +9,13 @@
 # PATH may not include mise-managed interpreters.
 set -euo pipefail
 
-script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly script_dir
+# Resolved with parameter expansion and shell builtins only. Hooks inherit an
+# unpredictable PATH, and this guard must still work when even `dirname` is
+# missing -- failing to start is indistinguishable from having no guard.
+source_path="${BASH_SOURCE[0]}"
+source_dir="${source_path%/*}"
+[[ "${source_dir}" == "${source_path}" ]] && source_dir="."
+script_dir="$(cd "${source_dir}" && pwd)"
+readonly source_path source_dir script_dir
 
 exec /usr/bin/python3 "${script_dir}/guard_bash.py"

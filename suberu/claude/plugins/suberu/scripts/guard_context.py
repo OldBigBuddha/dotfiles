@@ -2,18 +2,17 @@
 
 Reads a PreToolUse payload on stdin. Prints a deny decision on stdout when the
 orchestrator tries to pull worker material -- implementation files or raw agent
-scrollback -- into its own context. Prints nothing otherwise. The exit status
-is always 0; the decision travels in the JSON.
+scrollback -- into its own context. Prints nothing when the call is fine, and a
+warning when it cannot tell. The exit status is always 0; the decision travels
+in the JSON.
 
 The orchestrator's value comes from holding fleet state, not implementation
 detail: every worker file it reads costs context permanently and buys nothing
 the worker could not summarise. So the orchestrator reads summaries and
 delegates everything else. Workers own their worktree and are unrestricted.
 
-Role is inferred from the payload's cwd, with no subprocess and no
-configuration: the repository root keeps `.git` as a directory containing
-`worktrees/`, while a linked worktree keeps `.git` as a file holding a gitdir
-pointer. An `SUBERU_ROLE` environment variable overrides the inference.
+Role and worktree locations come from git (see suberu_git), so no repository
+layout is assumed.
 
 Only the stock interpreter at /usr/bin/python3 is assumed, so this file must
 stay compatible with Python 3.9 and import nothing outside the stdlib.
@@ -24,13 +23,15 @@ import os
 import shlex
 import sys
 
+import suberu_git
+
 # Files that exist precisely to be read by the orchestrator. Everything else
 # inside a worktree is the worker's business.
 ALLOWED_BASENAMES = frozenset(("report.md", "CLAUDE.local.md", "CLAUDE.md"))
 ALLOWED_SUFFIXES = (".plan.md",)
 ALLOWED_DIR_MARKER = "/.suberu/"
 
-# Tool inputs that name a filesystem path, by tool.
+# Tool inputs that name a filesystem path.
 PATH_FIELDS = ("file_path", "path", "notebook_path")
 
 # herdr subcommands that emit raw terminal scrollback.
@@ -50,23 +51,6 @@ DELEGATE_HINT = (
 )
 
 
-def is_orchestrator(cwd):
-    """True when cwd is the repository root that owns the linked worktrees."""
-    override = os.environ.get("SUBERU_ROLE")
-    if override:
-        return override == "orchestrator"
-    if not cwd:
-        return False
-    return os.path.isdir(os.path.join(cwd, ".git", "worktrees"))
-
-
-def resolve(cwd, path):
-    """Absolutise and normalise a possibly-relative tool path."""
-    if not os.path.isabs(path):
-        path = os.path.join(cwd, path)
-    return os.path.realpath(path)
-
-
 def is_summary(path):
     """True for files written to be consumed by the orchestrator."""
     if os.path.basename(path) in ALLOWED_BASENAMES:
@@ -76,23 +60,18 @@ def is_summary(path):
     return any(path.endswith(suffix) for suffix in ALLOWED_SUFFIXES)
 
 
-def inside_worktree(root, path):
-    """True when path sits inside one of root's worktrees rather than at root."""
-    root = os.path.realpath(root)
-    if path == root or not path.startswith(root + os.sep):
-        return False
-    remainder = path[len(root) + 1 :]
-    if remainder.split(os.sep)[0] == ".git":
-        return False
-    return os.sep in remainder
+def resolve(cwd, path):
+    if not os.path.isabs(path):
+        path = os.path.join(cwd, path)
+    return os.path.realpath(path)
 
 
-def check_path(root, cwd, raw_path):
+def check_path(facts, cwd, raw_path):
     """Return a deny reason for a forbidden path access, else None."""
     if not raw_path:
         return None
     path = resolve(cwd, raw_path)
-    if not inside_worktree(root, path):
+    if not facts.contains_worker_material(path):
         return None
     if is_summary(path):
         return None
@@ -109,7 +88,7 @@ def split_segments(command):
     return [s.strip() for s in segments if s.strip()]
 
 
-def check_command(root, cwd, command):
+def check_command(facts, cwd, command):
     """Return a deny reason for a forbidden Bash command, else None."""
     for segment in split_segments(command):
         try:
@@ -134,26 +113,35 @@ def check_command(root, cwd, command):
             for token in tokens[1:]:
                 if token.startswith("-"):
                     continue
-                reason = check_path(root, cwd, token)
+                reason = check_path(facts, cwd, token)
                 if reason is not None:
                     return reason
     return None
 
 
-def find_violation(payload):
+def evaluate(payload):
+    """Return the JSON decision for a payload, or None to stay silent."""
     cwd = payload.get("cwd", "")
-    if not is_orchestrator(cwd):
+    try:
+        facts = suberu_git.repo_facts(cwd)
+    except suberu_git.Undetermined as error:
+        return suberu_git.warn(str(error))
+
+    if facts is None or facts.role != suberu_git.ORCHESTRATOR:
         return None
+
     tool_input = payload.get("tool_input", {}) or {}
 
     if payload.get("tool_name") == "Bash":
-        return check_command(cwd, cwd, tool_input.get("command", ""))
+        reason = check_command(facts, cwd, tool_input.get("command", ""))
+    else:
+        reason = None
+        for field in PATH_FIELDS:
+            reason = check_path(facts, cwd, tool_input.get(field, ""))
+            if reason is not None:
+                break
 
-    for field in PATH_FIELDS:
-        reason = check_path(cwd, cwd, tool_input.get(field, ""))
-        if reason is not None:
-            return reason
-    return None
+    return suberu_git.deny(reason) if reason is not None else None
 
 
 def main():
@@ -162,21 +150,9 @@ def main():
     except (ValueError, OSError):
         return 0
 
-    reason = find_violation(payload)
-    if reason is None:
-        return 0
-
-    json.dump(
-        {
-            "hookSpecificOutput": {
-                "hookEventName": "PreToolUse",
-                "permissionDecision": "deny",
-                "permissionDecisionReason": reason,
-            }
-        },
-        sys.stdout,
-        separators=(",", ":"),
-    )
+    decision = evaluate(payload)
+    if decision is not None:
+        json.dump(decision, sys.stdout, separators=(",", ":"))
     return 0
 
 

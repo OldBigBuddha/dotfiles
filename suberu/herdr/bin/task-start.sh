@@ -58,7 +58,9 @@ readonly parent_workspace
 
 readonly parent_id="${parent_workspace%% *}"
 readonly repo_root="${parent_workspace#* }"
-worktree_path="$(suberu::flat_path "${repo_root}" "${slug}")"
+worktree_home="$(suberu::worktree_home "${repo_root}")"
+readonly worktree_home
+worktree_path="$(suberu::flat_path "${worktree_home}" "${slug}")"
 readonly worktree_path
 
 # worktree.created fires here, which is what seeds .claude/settings.local.json.

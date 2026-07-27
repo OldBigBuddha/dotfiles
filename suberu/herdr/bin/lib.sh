@@ -62,6 +62,24 @@ suberu::die() {
   exit 1
 }
 
+# The directory worktrees belong in, asked of git rather than inferred from
+# the shape of the path. It is the parent of the git common directory, which
+# covers both layouts: `<root>/.git` yields `<root>` (worktrees inside the
+# root) and `<base>/repo.git` yields `<base>` (worktrees beside the bare dir).
+suberu::worktree_home() {
+  local -r repo_path="$1"
+  local common_dir
+
+  common_dir="$(git -C "${repo_path}" rev-parse --git-common-dir 2>/dev/null)" ||
+    suberu::die "${repo_path} is not a git repository"
+
+  if [[ "${common_dir}" != /* ]]; then
+    common_dir="${repo_path}/${common_dir}"
+  fi
+
+  cd "${common_dir}/.." && pwd
+}
+
 # Compose the flat worktree path for a slug, rejecting anything that would
 # nest. Flat placement is what keeps one task equal to one worktree equal to
 # one workspace; a nested path silently breaks that mapping.

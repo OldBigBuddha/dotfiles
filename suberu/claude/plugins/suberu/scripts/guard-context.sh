@@ -6,7 +6,11 @@
 # model and the user.
 set -euo pipefail
 
-script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly script_dir
+# Resolved with parameter expansion and shell builtins only; see guard-bash.sh.
+source_path="${BASH_SOURCE[0]}"
+source_dir="${source_path%/*}"
+[[ "${source_dir}" == "${source_path}" ]] && source_dir="."
+script_dir="$(cd "${source_dir}" && pwd)"
+readonly source_path source_dir script_dir
 
 exec /usr/bin/python3 "${script_dir}/guard_context.py"

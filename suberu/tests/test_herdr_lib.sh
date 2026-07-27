@@ -32,6 +32,18 @@ assert_contains "$(capture_flat_path '..')" "REJECTED" "reject parent-directory 
 assert_contains "$(capture_flat_path '')" "REJECTED" "reject empty slug"
 assert_contains "$(capture_flat_path '.hidden')" "REJECTED" "reject slug starting with a dot"
 
+# --- where worktrees belong is git's answer, not a guess from the path shape ---
+# shellcheck source=./fixtures.sh
+source "${tests_dir}/fixtures.sh"
+read -r fx_normal_root _ <<<"$(fixture_normal_repo "${scratch}/normal")"
+read -r fx_bare_root _ <<<"$(fixture_bare_repo "${scratch}/bare")"
+readonly fx_normal_root fx_bare_root
+
+assert_equals "$(cd "${fx_normal_root}" && pwd)" "$(suberu::worktree_home "${fx_normal_root}")" \
+  "conventional layout puts worktrees inside the repository root"
+assert_equals "$(cd "${fx_bare_root}/.." && pwd)" "$(suberu::worktree_home "${fx_bare_root}")" \
+  "bare layout puts worktrees beside the bare directory"
+
 # --- seeding permissions must never clobber a worktree's own settings ---
 readonly template="${scratch}/template.json"
 readonly target="${scratch}/settings.local.json"

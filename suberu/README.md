@@ -58,9 +58,30 @@ intermediary agent is explicitly rejected, because it would replace a zero-token
 event with model calls and make a second agent reconstruct from logs what the
 worker already knows.
 
-Role is inferred from the payload's working directory, with no configuration:
-the repository root keeps `.git` as a directory containing `worktrees/`, while a
-linked worktree keeps `.git` as a file. `SUBERU_ROLE` overrides it.
+## Repository layout independence
+
+Nothing infers the repository from directory shape; everything the guards need
+is asked of git.
+
+- **Role**: the repository root's git directory *is* the common directory, while
+  a linked worktree's sits underneath it. Comparing `git rev-parse --git-dir`
+  with `--git-common-dir` therefore separates the two. `SUBERU_ROLE` overrides.
+- **Which paths are worker material**: `git worktree list --porcelain`, so
+  worktrees are recognised wherever they actually live.
+- **Where a new worktree belongs**: the parent of the git common directory —
+  `<root>/.git` yields `<root>` (worktrees inside the root), `<base>/repo.git`
+  yields `<base>` (worktrees beside the bare directory).
+
+Both a conventional repository and a textbook bare one are covered, and both are
+exercised by the test suite against real repositories.
+
+When git cannot be consulted at all, the guards emit a `systemMessage` warning
+rather than staying silent. A guardrail that cannot tell must say so: an earlier
+version inferred the role from `<cwd>/.git/worktrees`, quietly decided a bare
+repository was "not an orchestrator", and disabled every rule without a word.
+For the same reason the hook entrypoints resolve their own directory with shell
+builtins only — hooks inherit an unpredictable `PATH`, and a guard that fails to
+start is indistinguishable from a guard that is not there.
 
 ## Install
 

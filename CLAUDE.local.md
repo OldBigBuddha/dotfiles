@@ -40,6 +40,28 @@ orchestrator session — which conflicts with restarting the orchestrator as the
 recovery path. One-off investigations still go to throwaway subagents; the axis
 is routine versus one-off, not permanent versus temporary.
 
+### Repository layout independence (follow-up)
+
+The first cut inferred the role from `<cwd>/.git/worktrees` being a directory.
+That holds for this monorepo — which is `core.bare = true` yet still carries a
+`.git/` directory — and fails for a textbook bare repository, where worktrees
+live at `repo.git/worktrees` and no `.git` exists. Verified by building one:
+the guards decided the session was not an orchestrator and **disabled every
+rule silently**.
+
+Replaced by asking git. Role comes from `git rev-parse --git-dir` versus
+`--git-common-dir`; worker material comes from `git worktree list --porcelain`,
+so worktrees are found wherever they live; placement comes from the parent of
+the git common directory, which yields `<root>` for `<root>/.git` and `<base>`
+for `<base>/repo.git` under one rule. Indeterminate cases now emit a
+`systemMessage` instead of failing open.
+
+Two related lessons: the hook entrypoints must resolve their own directory with
+shell builtins only, because a stripped `PATH` cost them `dirname` and a guard
+that cannot start looks exactly like a guard that is not installed. And the
+accidental `git worktree add ../wt-a` made during this work is precisely what
+the guard denies — the old component-counting check would have let it through.
+
 ### Facts measured against Herdr 0.7.5
 
 Undocumented behaviour, established with a probe plugin rather than assumed:

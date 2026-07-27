@@ -2,34 +2,33 @@
 # Contract for scripts/guard-context.sh -- the context-pollution guard.
 #
 # The orchestrator must not pull worker material into its own context: not
-# implementation files, not raw agent scrolls. Workers are unrestricted; the
-# guard therefore has to tell the two roles apart from the payload alone.
+# implementation files, not raw agent scrolls. Workers are unrestricted, so the
+# guard has to tell the two roles apart from the payload alone.
 #
-# Fixtures are a synthetic repo so the suite does not depend on the state of
-# any real checkout: <root>/.git/ is a directory holding worktrees/ (the
-# orchestrator's cwd), and <root>/wt/.git is a file (a linked worktree).
+# Both repository layouts are exercised. An earlier version inferred the role
+# from directory shape and silently treated a textbook bare repository as "not
+# an orchestrator", disabling every rule without a word -- the worst failure a
+# guardrail can have.
 set -euo pipefail
 
 tests_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly tests_dir
 # shellcheck source=./lib.sh
 source "${tests_dir}/lib.sh"
+# shellcheck source=./fixtures.sh
+source "${tests_dir}/fixtures.sh"
 
 guard="$(dirname "${tests_dir}")/claude/plugins/suberu/scripts/guard-context.sh"
 readonly guard
 
-fixture_root="$(mktemp -d)"
-readonly fixture_root
-trap 'rm -rf "${fixture_root}"' EXIT
+scratch="$(mktemp -d)"
+readonly scratch
+trap 'rm -rf "${scratch}"' EXIT
 
-mkdir -p "${fixture_root}/.git/worktrees/wt"
-mkdir -p "${fixture_root}/wt/src" "${fixture_root}/wt/.suberu"
-printf 'gitdir: %s/.git/worktrees/wt\n' "${fixture_root}" >"${fixture_root}/wt/.git"
+read -r normal_root normal_wt <<<"$(fixture_normal_repo "${scratch}/normal")"
+read -r bare_root bare_wt <<<"$(fixture_bare_repo "${scratch}/bare")"
+readonly normal_root normal_wt bare_root bare_wt
 
-readonly orchestrator_cwd="${fixture_root}"
-readonly worker_cwd="${fixture_root}/wt"
-
-# Build a PreToolUse payload and run it through the guard.
 run_guard() {
   local -r cwd="$1"
   local -r tool="$2"
@@ -53,42 +52,59 @@ assert_allowed() {
   assert_equals "" "${output}" "allow: ${label}"
 }
 
-# --- the orchestrator must delegate instead of reading worker source ---
+# --- conventional layout: worktrees live inside the repository root ---
 assert_denied "orchestrator reads worker source" \
-  "${orchestrator_cwd}" Read file_path "${fixture_root}/wt/src/main.go"
+  "${normal_root}" Read file_path "${normal_wt}/src/main.go"
 assert_denied "orchestrator greps inside a worktree" \
-  "${orchestrator_cwd}" Grep path "${fixture_root}/wt/src"
+  "${normal_root}" Grep path "${normal_wt}/src"
 assert_denied "orchestrator edits worker source" \
-  "${orchestrator_cwd}" Edit file_path "${fixture_root}/wt/src/main.go"
+  "${normal_root}" Edit file_path "${normal_wt}/src/main.go"
 
-# --- summaries are written to be read by the orchestrator ---
+# --- bare layout: worktrees are siblings, not children ---
+assert_denied "bare-root orchestrator reads worker source" \
+  "${bare_root}" Read file_path "${bare_wt}/src/main.go"
+assert_denied "bare-root orchestrator cats worker source" \
+  "${bare_root}" Bash command "cat ${bare_wt}/src/main.go"
+
+# --- summaries exist to be read by the orchestrator ---
 assert_allowed "orchestrator reads a worker report" \
-  "${orchestrator_cwd}" Read file_path "${fixture_root}/wt/.suberu/report.md"
+  "${normal_root}" Read file_path "${normal_wt}/.suberu/report.md"
 assert_allowed "orchestrator reads CLAUDE.local.md" \
-  "${orchestrator_cwd}" Read file_path "${fixture_root}/wt/CLAUDE.local.md"
+  "${normal_root}" Read file_path "${normal_wt}/CLAUDE.local.md"
 
 # --- anything outside the repository is unrelated to fleet hygiene ---
 assert_allowed "orchestrator reads its own dotfiles" \
-  "${orchestrator_cwd}" Read file_path "/Users/s.yamakawa/dotfiles/suberu/README.md"
+  "${normal_root}" Read file_path "/Users/s.yamakawa/dotfiles/suberu/README.md"
 assert_allowed "orchestrator reads a file at the repo root" \
-  "${orchestrator_cwd}" Read file_path "${fixture_root}/README.md"
+  "${normal_root}" Read file_path "${normal_root}/README.md"
 
 # --- raw agent scrollback is the other pollution route ---
 assert_denied "orchestrator reads an agent scroll" \
-  "${orchestrator_cwd}" Bash command "herdr agent read nbd-io-bench --lines 200"
+  "${normal_root}" Bash command "herdr agent read nbd-io-bench --lines 200"
 assert_denied "orchestrator reads a pane scroll" \
-  "${orchestrator_cwd}" Bash command "herdr pane read w4:p1"
-assert_denied "orchestrator cats worker source" \
-  "${orchestrator_cwd}" Bash command "cat ${fixture_root}/wt/src/main.go"
+  "${normal_root}" Bash command "herdr pane read w4:p1"
 assert_allowed "orchestrator queries fleet state" \
-  "${orchestrator_cwd}" Bash command "herdr workspace list"
+  "${normal_root}" Bash command "herdr workspace list"
 assert_allowed "orchestrator checks agent status" \
-  "${orchestrator_cwd}" Bash command "herdr agent get nbd-io-bench"
+  "${normal_root}" Bash command "herdr agent get nbd-io-bench"
 
-# --- workers own their worktree and are not restricted ---
+# --- workers own their worktree ---
 assert_allowed "worker reads its own source" \
-  "${worker_cwd}" Read file_path "${fixture_root}/wt/src/main.go"
+  "${normal_wt}" Read file_path "${normal_wt}/src/main.go"
 assert_allowed "worker cats its own source" \
-  "${worker_cwd}" Bash command "cat ${fixture_root}/wt/src/main.go"
+  "${normal_wt}" Bash command "cat ${normal_wt}/src/main.go"
+assert_allowed "bare-layout worker reads its own source" \
+  "${bare_wt}" Read file_path "${bare_wt}/src/main.go"
+
+# --- a directory that is not a repository carries no fleet semantics ---
+mkdir -p "${scratch}/plain"
+assert_allowed "non-repository cwd is not policed" \
+  "${scratch}/plain" Read file_path "${scratch}/plain/anything.txt"
+
+# --- an undeterminable role must say so rather than fail open ---
+# /bin holds bash but not git, so the guard runs and finds git missing.
+undetermined="$(PATH=/bin run_guard "${normal_root}" Read file_path "${normal_wt}/src/main.go")"
+readonly undetermined
+assert_contains "${undetermined}" '"systemMessage"' "warn when git cannot be consulted"
 
 finish_tests

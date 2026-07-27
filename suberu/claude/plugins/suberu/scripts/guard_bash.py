@@ -15,8 +15,11 @@ stay compatible with Python 3.9 and import nothing outside the stdlib.
 """
 
 import json
+import os
 import shlex
 import sys
+
+import suberu_git
 
 # git's global options that take a separate value argument. Needed so the
 # scan for `-C` does not mistake an option's value for the subcommand.
@@ -74,7 +77,7 @@ def strip_env_prefix(tokens):
     return tokens[index:]
 
 
-def check_git(tokens, cwd):
+def check_git(tokens, cwd, facts):
     """Return a deny reason for a forbidden git invocation, else None."""
     index = 1
     while index < len(tokens) and tokens[index].startswith("-"):
@@ -91,34 +94,32 @@ def check_git(tokens, cwd):
         index += 1
 
     if index + 1 < len(tokens) and tokens[index] == "worktree" and tokens[index + 1] == "add":
-        return check_worktree_add(tokens[index + 2 :], cwd)
+        return check_worktree_add(tokens[index + 2 :], cwd, facts)
     return None
 
 
-def check_worktree_add(args, cwd):
-    """Enforce flat worktree placement directly under the repository root."""
+def check_worktree_add(args, cwd, facts):
+    """Enforce flat worktree placement in the directory git worktrees belong in.
+
+    That directory is derived from git rather than from the shape of the path,
+    so both layouts are handled: worktrees sit inside the root of a repository
+    with a `.git` directory, and beside a bare `repo.git`.
+    """
+    if facts is None:
+        return None
     path = next((arg for arg in args if not arg.startswith("-")), None)
     if path is None:
         return None
-    if ".." in path.split("/"):
-        return "Worktree paths must not contain `..`; give the flat path explicitly."
 
-    if path.startswith("/"):
-        prefix = cwd.rstrip("/") + "/"
-        if not path.startswith(prefix):
-            return (
-                "Worktree {} is outside the repository root {}. Worktrees must sit "
-                "flat directly under the root.".format(path, cwd)
-            )
-        remainder = path[len(prefix) :]
-    else:
-        remainder = path
+    if not os.path.isabs(path):
+        path = os.path.join(cwd, path)
+    resolved = os.path.realpath(path)
 
-    if "/" in remainder.strip("/"):
+    if os.path.dirname(resolved) != facts.home:
         return (
-            "Worktree path `{}` is nested. Worktrees must sit flat directly under the "
-            "repository root (one path component), never under `.claude/worktrees/` "
-            "or any other subdirectory.".format(path)
+            "Worktree `{}` would land in {}, but worktrees belong flat in {}. One "
+            "task is one worktree is one workspace, and nesting breaks that "
+            "mapping.".format(path, os.path.dirname(resolved), facts.home)
         )
     return None
 
@@ -143,7 +144,7 @@ def check_terraform(tokens):
     return None
 
 
-def find_violation(command, cwd):
+def find_violation(command, cwd, facts):
     """Return the first deny reason across all segments of a command line."""
     for segment in split_segments(command):
         tokens = strip_env_prefix(tokenize(segment))
@@ -151,7 +152,7 @@ def find_violation(command, cwd):
             continue
         program = tokens[0].rsplit("/", 1)[-1]
         if program == "git":
-            reason = check_git(tokens, cwd)
+            reason = check_git(tokens, cwd, facts)
         elif program == "terraform":
             reason = check_terraform(tokens)
         else:
@@ -171,21 +172,18 @@ def main():
 
     command = payload.get("tool_input", {}).get("command", "")
     cwd = payload.get("cwd", "")
-    reason = find_violation(command, cwd)
+
+    try:
+        facts = suberu_git.repo_facts(cwd)
+    except suberu_git.Undetermined as error:
+        json.dump(suberu_git.warn(str(error)), sys.stdout, separators=(",", ":"))
+        return 0
+
+    reason = find_violation(command, cwd, facts)
     if reason is None:
         return 0
 
-    json.dump(
-        {
-            "hookSpecificOutput": {
-                "hookEventName": "PreToolUse",
-                "permissionDecision": "deny",
-                "permissionDecisionReason": reason,
-            }
-        },
-        sys.stdout,
-        separators=(",", ":"),
-    )
+    json.dump(suberu_git.deny(reason), sys.stdout, separators=(",", ":"))
     return 0
 
 
