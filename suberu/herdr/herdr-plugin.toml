@@ -1,0 +1,26 @@
+id = "suberu"
+name = "Suberu"
+version = "0.1.0"
+min_herdr_version = "0.7.0"
+description = "Fleet orchestration for parallel Claude Code agents"
+platforms = ["macos"]
+
+# Command paths are relative to the plugin root: Herdr runs plugin commands
+# with the plugin root as the working directory (verified against 0.7.5).
+
+[[actions]]
+id = "fleet-status"
+title = "Suberu: show fleet status"
+contexts = ["workspace"]
+command = ["bash", "bin/fleet-status.sh"]
+
+# Every worktree Herdr creates gets Suberu's permission baseline, including
+# ones created by hand, which is what makes the guarantee unconditional.
+[[events]]
+on = "worktree.created"
+command = ["bash", "bin/on-worktree-created.sh"]
+
+# Replaces status polling. Costs no tokens and cannot hit a tool timeout.
+[[events]]
+on = "pane.agent_status_changed"
+command = ["bash", "bin/on-agent-status-changed.sh"]

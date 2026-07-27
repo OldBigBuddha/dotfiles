@@ -1,0 +1,8 @@
+{
+  "name": "suberu",
+  "description": "Orchestrator-side guardrails: worktree hygiene, terraform safety, and context-pollution control",
+  "version": "0.1.0",
+  "author": {
+    "name": "Shinra Yamakawa"
+  }
+}

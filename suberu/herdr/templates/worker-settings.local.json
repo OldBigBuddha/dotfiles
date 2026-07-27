@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(terraform fmt*)",
+      "Bash(terraform validate*)",
+      "Bash(terraform plan*)",
+      "Bash(terraform show*)",
+      "Bash(terraform output*)",
+      "Bash(terraform state list*)",
+      "Bash(terraform state show*)"
+    ],
+    "deny": [
+      "Bash(terraform apply*)",
+      "Bash(terraform destroy*)",
+      "Bash(terraform import*)",
+      "Bash(terraform taint*)",
+      "Bash(terraform untaint*)",
+      "Bash(terraform state mv*)",
+      "Bash(terraform state rm*)",
+      "Bash(terraform state push*)",
+      "Bash(terraform force-unlock*)",
+      "Bash(terraform workspace delete*)",
+      "Bash(aws *)"
+    ]
+  }
+}
