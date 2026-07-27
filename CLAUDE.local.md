@@ -83,8 +83,52 @@ Undocumented behaviour, established with a probe plugin rather than assumed:
 
 ### Verification performed
 
-Unit suite green (20 assertions) plus shellcheck clean, and a full live run: a
+Unit suite green plus shellcheck clean, and a full live run: a
 throwaway task was started, its worktree seeded, its agent briefed, its report
 written in the required format, its completion notified through the event
 handler, and its teardown refused while the worktree was dirty and completed
 with `--force`.
+
+### Review findings and their fixes (2026-07-27, later)
+
+A review of the branch found six defects, all reproduced against real
+repositories before being fixed and all now covered by the suite (93
+assertions, up from 67). Two were the same failure the previous commit set out
+to end, arriving by new routes.
+
+**A space in the repository path disabled every guard.** `suberu_git` read
+`git rev-parse --git-dir --git-common-dir` with `.split()`, which splits on all
+whitespace rather than on lines. From a subdirectory git answers `--git-dir`
+absolutely and `--git-common-dir` relatively, so `/home/me/my repo/.git` tore
+into fragments that paired the wrong halves; the two "paths" differed, the role
+read as `worker`, and the context guard returned nothing for every call. The
+control case without a space denied correctly, which is why nothing noticed.
+`splitlines()` fixes it, and the fixture now builds a repository named
+`my repo` — note it cannot use the `read -r` idiom the other fixtures use, for
+precisely the reason the bug existed.
+
+**`git worktree add -b <branch> <path>` skipped the placement check.** The
+destination was taken as the first word not starting with `-`, but `-b`, `-B`
+and `--reason` each consume the word after them, so the branch name was
+measured instead. It resolved under the cwd, matched `home`, and passed — while
+the real destination was never examined. Naming a branch is the common case and
+`task-start.sh` always does it, so the guard was mostly inert in practice.
+
+The remaining four: `--git-dir`/`--work-tree` did what `-C` is denied for and
+were allowed, so they now share its rule and its message; a `cd` earlier in a
+command line was ignored, so `cd <worktree> && cat src.py` read worker material
+and `cd /tmp && git worktree add x` escaped placement, now tracked by
+`suberu_git.apply_cd` in both guards; `merge_settings` discarded the permission
+baseline in silence when a worktree held an incompatible type there
+(`"permissions": null`, a `deny` written as a string) and now keeps the
+worktree's value but says loudly what was not applied; and `SUBERU_ROLE` was
+unvalidated, so a typo matched no role and stood every rule down — it is now an
+`Undetermined`, as is a payload carrying no cwd.
+
+The pattern across all six is worth keeping: each was a guard producing no
+decision and no warning. Only the two that had a passing control case nearby
+were invisible; the rest were simply never asked. Confirmed sound and left
+alone: repositories with no commits, detached-HEAD worktrees, the bare layout,
+and `git worktree list --porcelain` ordering, whose line-based parsing already
+survived spaces. `merge_settings` was already correct about the thing it was
+most suspected of — malformed JSON aborts and leaves the file byte-identical.

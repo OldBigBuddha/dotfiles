@@ -27,6 +27,14 @@ GIT_GLOBAL_OPTS_WITH_VALUE = frozenset(
     ("-c", "--git-dir", "--work-tree", "--namespace", "--exec-path", "--config-env")
 )
 
+# Options that point git at a repository other than the one the cwd is in.
+# `-C` is the short spelling of the same move and is handled alongside them.
+GIT_REDIRECT_OPTS = frozenset(("--git-dir", "--work-tree"))
+
+# `git worktree add` options that consume a following word. Without these the
+# scan for the destination stops at a branch name and checks the wrong thing.
+WORKTREE_ADD_OPTS_WITH_VALUE = frozenset(("-b", "-B", "--reason"))
+
 # terraform subcommands that change real infrastructure or state. Everything
 # else (plan, show, output, validate, fmt, init, state list, state show) is
 # read-only enough to run unattended.
@@ -82,11 +90,14 @@ def check_git(tokens, cwd, facts):
     index = 1
     while index < len(tokens) and tokens[index].startswith("-"):
         option = tokens[index]
-        if option == "-C" or option.startswith("-C"):
+        # `--git-dir=x` and `--git-dir x` are the same instruction to git.
+        name = option.split("=", 1)[0]
+        if option.startswith("-C") or name in GIT_REDIRECT_OPTS:
             return (
-                "`git -C` crosses worktree boundaries, which makes the working "
+                "`git {}` crosses worktree boundaries, which makes the working "
                 "directory meaningless and is how worktrees get mixed up. Run git "
-                "from inside the worktree you mean, or delegate to that worktree's agent."
+                "from inside the worktree you mean, or delegate to that worktree's "
+                "agent.".format(name)
             )
         if option in GIT_GLOBAL_OPTS_WITH_VALUE:
             index += 2
@@ -107,13 +118,27 @@ def check_worktree_add(args, cwd, facts):
     """
     if facts is None:
         return None
-    path = next((arg for arg in args if not arg.startswith("-")), None)
+
+    # The destination is the first positional word, but `-b`/`-B`/`--reason`
+    # each swallow the word after them: in `worktree add -b feat ../outside`
+    # the first non-option word is the branch, and checking it instead lets the
+    # real destination through unexamined.
+    path = None
+    index = 0
+    while index < len(args):
+        arg = args[index]
+        if arg in WORKTREE_ADD_OPTS_WITH_VALUE:
+            index += 2
+            continue
+        if arg.startswith("-"):
+            index += 1
+            continue
+        path = arg
+        break
     if path is None:
         return None
 
-    if not os.path.isabs(path):
-        path = os.path.join(cwd, path)
-    resolved = os.path.realpath(path)
+    resolved = suberu_git.resolve(cwd, path)
 
     if os.path.dirname(resolved) != facts.home:
         return (
@@ -146,13 +171,19 @@ def check_terraform(tokens):
 
 def find_violation(command, cwd, facts):
     """Return the first deny reason across all segments of a command line."""
+    current = cwd
     for segment in split_segments(command):
         tokens = strip_env_prefix(tokenize(segment))
         if not tokens:
             continue
         program = tokens[0].rsplit("/", 1)[-1]
+        # `cd elsewhere && git worktree add feature-x` places the worktree
+        # under `elsewhere`, so the destination has to be measured from there.
+        if program == "cd":
+            current = suberu_git.apply_cd(current, tokens)
+            continue
         if program == "git":
-            reason = check_git(tokens, cwd, facts)
+            reason = check_git(tokens, current, facts)
         elif program == "terraform":
             reason = check_terraform(tokens)
         else:

@@ -19,12 +19,20 @@ import os
 import sys
 
 
-def merge(template, target):
-    """Recursively merge template into target, preferring target's own values."""
+def merge(template, target, conflicts=None, path=""):
+    """Recursively merge template into target, preferring target's own values.
+
+    `conflicts` collects the template paths that had to be abandoned because
+    the worktree holds an incompatible type there -- `"permissions": null`, say,
+    or a `deny` written as a bare string. The worktree's value still wins, but
+    the baseline going missing is exactly the kind of silent disarming Suberu
+    exists to prevent, so the caller reports it.
+    """
     if isinstance(template, dict) and isinstance(target, dict):
         merged = dict(target)
         for key, value in template.items():
-            merged[key] = merge(value, target[key]) if key in target else value
+            child = "{}.{}".format(path, key) if path else key
+            merged[key] = merge(value, target[key], conflicts, child) if key in target else value
         return merged
     if isinstance(template, list) and isinstance(target, list):
         merged = list(target)
@@ -32,6 +40,8 @@ def merge(template, target):
             if item not in merged:
                 merged.append(item)
         return merged
+    if isinstance(template, (dict, list)) and conflicts is not None:
+        conflicts.append(path or "<root>")
     # A scalar already chosen by the worktree wins over the template's default.
     return target
 
@@ -50,12 +60,20 @@ def main(argv):
         return 2
 
     template_path, target_path = argv[1], argv[2]
-    merged = merge(load(template_path), load(target_path))
+    conflicts = []
+    merged = merge(load(template_path), load(target_path), conflicts)
 
     os.makedirs(os.path.dirname(os.path.abspath(target_path)), exist_ok=True)
     with open(target_path, "w") as handle:
         json.dump(merged, handle, indent=2, sort_keys=True)
         handle.write("\n")
+
+    for conflict in conflicts:
+        sys.stderr.write(
+            "suberu: {} already holds an incompatible type in {}, so that part of the "
+            "permission baseline was NOT applied; this worktree is less guarded than "
+            "intended\n".format(conflict, target_path)
+        )
     return 0
 
 

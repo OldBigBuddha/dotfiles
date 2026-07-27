@@ -60,17 +60,11 @@ def is_summary(path):
     return any(path.endswith(suffix) for suffix in ALLOWED_SUFFIXES)
 
 
-def resolve(cwd, path):
-    if not os.path.isabs(path):
-        path = os.path.join(cwd, path)
-    return os.path.realpath(path)
-
-
 def check_path(facts, cwd, raw_path):
     """Return a deny reason for a forbidden path access, else None."""
     if not raw_path:
         return None
-    path = resolve(cwd, raw_path)
+    path = suberu_git.resolve(cwd, raw_path)
     if not facts.contains_worker_material(path):
         return None
     if is_summary(path):
@@ -90,6 +84,7 @@ def split_segments(command):
 
 def check_command(facts, cwd, command):
     """Return a deny reason for a forbidden Bash command, else None."""
+    current = cwd
     for segment in split_segments(command):
         try:
             tokens = shlex.split(segment)
@@ -98,6 +93,12 @@ def check_command(facts, cwd, command):
         if not tokens:
             continue
         program = tokens[0].rsplit("/", 1)[-1]
+
+        # `cd <worktree> && cat src.py` names no worktree in the read itself;
+        # the `cd` is the only thing that says where `src.py` lives.
+        if program == "cd":
+            current = suberu_git.apply_cd(current, tokens)
+            continue
 
         if program == "herdr":
             positional = [token for token in tokens[1:] if not token.startswith("-")]
@@ -113,7 +114,7 @@ def check_command(facts, cwd, command):
             for token in tokens[1:]:
                 if token.startswith("-"):
                     continue
-                reason = check_path(facts, cwd, token)
+                reason = check_path(facts, current, token)
                 if reason is not None:
                     return reason
     return None

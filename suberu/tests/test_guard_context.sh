@@ -96,6 +96,25 @@ assert_allowed "worker cats its own source" \
 assert_allowed "bare-layout worker reads its own source" \
   "${bare_wt}" Read file_path "${bare_wt}/src/main.go"
 
+# --- a space in the repository path must not decide the role for us ---
+# git answers --git-dir absolutely and --git-common-dir relatively when the cwd
+# is a subdirectory, so splitting the two lines on whitespace pairs the wrong
+# halves, mis-reads the role as "worker", and disables every rule in silence.
+fixture_spaced_repo "${scratch}/spaced"
+readonly fx_spaced_root fx_spaced_sub fx_spaced_wt
+assert_denied "orchestrator in a spaced repo reads worker source" \
+  "${fx_spaced_root}" Read file_path "${fx_spaced_wt}/src/main.go"
+assert_denied "orchestrator in a spaced subdirectory reads worker source" \
+  "${fx_spaced_sub}" Read file_path "${fx_spaced_wt}/src/main.go"
+assert_allowed "worker in a spaced repo reads its own source" \
+  "${fx_spaced_wt}" Read file_path "${fx_spaced_wt}/src/main.go"
+
+# --- a `cd` earlier in the line moves what a relative path means ---
+assert_denied "orchestrator cds into a worktree and cats" \
+  "${normal_root}" Bash command "cd ${normal_wt} && cat src/main.go"
+assert_allowed "cd elsewhere leaves unrelated reads alone" \
+  "${normal_root}" Bash command "cd /tmp && cat notes.txt"
+
 # --- a directory that is not a repository carries no fleet semantics ---
 mkdir -p "${scratch}/plain"
 assert_allowed "non-repository cwd is not policed" \
@@ -106,5 +125,21 @@ assert_allowed "non-repository cwd is not policed" \
 undetermined="$(PATH=/bin run_guard "${normal_root}" Read file_path "${normal_wt}/src/main.go")"
 readonly undetermined
 assert_contains "${undetermined}" '"systemMessage"' "warn when git cannot be consulted"
+
+# A misspelt override is neither role, so it must warn rather than match
+# nothing and quietly stand down.
+bogus_role="$(SUBERU_ROLE=banana run_guard "${normal_root}" Read file_path "${normal_wt}/src/main.go")"
+readonly bogus_role
+assert_contains "${bogus_role}" '"systemMessage"' "warn on an unrecognised SUBERU_ROLE"
+
+# An override that names a real role is still honoured.
+forced="$(SUBERU_ROLE=orchestrator run_guard "${normal_wt}" Read file_path "${normal_wt}/src/main.go")"
+readonly forced
+assert_contains "${forced}" '"permissionDecision":"deny"' "SUBERU_ROLE=orchestrator is honoured"
+
+# A payload with no cwd cannot be judged, so it must say so.
+readonly cwdless='{"hook_event_name":"PreToolUse","tool_name":"Read","tool_input":{"file_path":"/tmp/x"}}'
+assert_contains "$(printf '%s' "${cwdless}" | bash "${guard}")" '"systemMessage"' \
+  "warn when the payload carries no cwd"
 
 finish_tests

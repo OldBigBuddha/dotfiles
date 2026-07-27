@@ -61,10 +61,28 @@ def _git(cwd, args):
         raise Undetermined("git could not be executed: {}".format(error))
 
 
-def _resolve(cwd, path):
+def resolve(cwd, path):
+    """Absolute, symlink-free form of path as seen from cwd."""
     if not os.path.isabs(path):
         path = os.path.join(cwd, path)
     return os.path.realpath(path)
+
+
+def apply_cd(cwd, tokens):
+    """Where a `cd` segment leaves the working directory.
+
+    Both guards split a command line on the operators that start a fresh
+    command, so `cd <worktree> && cat src.py` arrives as two segments. Without
+    tracking the `cd`, the second one is measured against the session's cwd and
+    a relative path into a worktree stops looking like one.
+    """
+    targets = [token for token in tokens[1:] if not token.startswith("-")]
+    if not targets:
+        return os.path.expanduser("~")
+    if targets[0] == "-":
+        # `cd -` returns to a previous directory this process never saw.
+        return cwd
+    return resolve(cwd, targets[0])
 
 
 def repo_facts(cwd):
@@ -73,8 +91,12 @@ def repo_facts(cwd):
     Raises Undetermined when git exists but cannot answer, which callers must
     surface rather than treat as "no repository".
     """
-    if not cwd or not os.path.isdir(cwd):
-        return None
+    # Being unable to locate the session is not the same as the session being
+    # outside a repository, so it warns rather than waving the call through.
+    if not cwd:
+        raise Undetermined("the payload carried no working directory")
+    if not os.path.isdir(cwd):
+        raise Undetermined("working directory does not exist: {}".format(cwd))
 
     revparse = _git(cwd, ["rev-parse", "--git-dir", "--git-common-dir"])
     if revparse.returncode != 0:
@@ -82,12 +104,15 @@ def repo_facts(cwd):
             return None
         raise Undetermined(revparse.stderr.strip() or "git rev-parse failed")
 
-    parts = revparse.stdout.split()
+    # One path per line, split on newlines only. Splitting on whitespace tore
+    # `/home/me/my repo/.git` into two fragments and paired the wrong halves,
+    # which read as a role change and disabled every rule without a word.
+    parts = [line.strip() for line in revparse.stdout.splitlines() if line.strip()]
     if len(parts) < 2:
         raise Undetermined("git rev-parse returned an unusable answer")
 
-    git_dir = _resolve(cwd, parts[0])
-    common_dir = _resolve(cwd, parts[1])
+    git_dir = resolve(cwd, parts[0])
+    common_dir = resolve(cwd, parts[1])
 
     # A linked worktree has its own git dir under the common one; the root's
     # git dir *is* the common one.
@@ -96,6 +121,12 @@ def repo_facts(cwd):
 
     override = os.environ.get("SUBERU_ROLE")
     if override:
+        # A misspelt override matches no role, and a role that matches nothing
+        # silently relaxes every rule -- the failure this module exists to end.
+        if override not in (ORCHESTRATOR, WORKER):
+            raise Undetermined(
+                "SUBERU_ROLE={} is neither {} nor {}".format(override, ORCHESTRATOR, WORKER)
+            )
         role = override
 
     linked = []

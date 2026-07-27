@@ -60,6 +60,40 @@ assert_contains "${merged}" '"model"' "merge keeps unrelated keys"
 /usr/bin/python3 "${herdr_dir}/bin/merge_settings.py" "${template}" "${target}"
 assert_equals "$(printf '%s' "${merged}" | tr -d ' \n')" "$(tr -d ' \n' <"${target}")" "merge is idempotent"
 
+# --- a type the template did not expect drops the baseline, so it must say so ---
+# The worktree's own value still wins; what must not happen is the guardrails
+# going missing with nobody told.
+merge_conflict() {
+  local -r existing="$1"
+  local -r conflicted="${scratch}/conflict.json"
+  printf '%s' "${existing}" >"${conflicted}"
+  # Only the warning is under test, so stdout is dropped before the swap.
+  { /usr/bin/python3 "${herdr_dir}/bin/merge_settings.py" "${template}" "${conflicted}" >/dev/null; } 2>&1
+}
+
+assert_contains "$(merge_conflict '{"permissions":null}')" "permissions" \
+  "a null where a table was expected is reported"
+assert_contains "$(merge_conflict '{"permissions":"everything"}')" "permissions" \
+  "a scalar where a table was expected is reported"
+assert_contains "$(merge_conflict '{"permissions":{"deny":"Bash(rm:*)"}}')" "deny" \
+  "a string where a list was expected is reported"
+assert_equals "" "$(merge_conflict '{"permissions":{"allow":["Bash(pnpm test*)"]}}')" \
+  "a compatible file merges without a word"
+
+# The worktree's own value survives the warning.
+printf '%s' '{"permissions":"everything"}' >"${scratch}/keep.json"
+/usr/bin/python3 "${herdr_dir}/bin/merge_settings.py" "${template}" "${scratch}/keep.json" 2>/dev/null
+assert_contains "$(cat "${scratch}/keep.json")" 'everything' "the worktree's own value is kept"
+
+# Malformed JSON must abort rather than overwrite what it could not read.
+printf '%s' '{"permissions": {"allow": ["Read"' >"${scratch}/broken.json"
+broken_rc=0
+/usr/bin/python3 "${herdr_dir}/bin/merge_settings.py" "${template}" "${scratch}/broken.json" \
+  >/dev/null 2>&1 || broken_rc=$?
+assert_equals "1" "${broken_rc}" "unreadable settings abort the seeding"
+assert_equals '{"permissions": {"allow": ["Read"' "$(cat "${scratch}/broken.json")" \
+  "unreadable settings are left untouched"
+
 # --- notify on a real transition only; the event carries no previous status ---
 readonly state_dir="${scratch}/state"
 transition() {

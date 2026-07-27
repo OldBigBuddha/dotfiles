@@ -58,6 +58,12 @@ assert_denied "${normal_root}" 'git --no-pager -C /tmp status'
 assert_allowed "${normal_root}" 'git log -C50 --stat'
 assert_allowed "${normal_root}" 'git status'
 
+# --- --git-dir/--work-tree cross the same boundary -C does, just spelled out ---
+assert_denied "${normal_root}" "git --git-dir=${normal_root}/.git status"
+assert_denied "${normal_root}" "git --git-dir ${normal_root}/.git status"
+assert_denied "${normal_root}" "git --work-tree=${normal_root} status"
+assert_denied "${normal_root}" 'git --namespace=foo --work-tree /elsewhere log'
+
 # --- worktree placement, conventional layout: flat inside the root ---
 assert_allowed "${normal_root}" "git worktree add ${normal_root}/feature-x"
 assert_allowed "${normal_root}" 'git worktree add feature-x'
@@ -68,6 +74,19 @@ assert_denied "${normal_root}" 'git worktree add nested/dir/foo'
 # repository, which the old component-counting check waved through.
 assert_denied "${normal_root}" 'git worktree add ../outside'
 assert_allowed "${normal_root}" 'git worktree list'
+
+# `-b`, `-B` and `--reason` take a separate value, so the destination is not
+# simply the first non-option word. Naming a branch is the common case -- and
+# Suberu's own task-start.sh always does -- so missing it misses the rule.
+assert_denied "${normal_root}" 'git worktree add -b feature ../outside'
+assert_denied "${normal_root}" 'git worktree add -B feature nested/dir/foo'
+assert_denied "${normal_root}" 'git worktree add --lock --reason busy ../outside'
+assert_denied "${normal_root}" 'git worktree add --reason=busy ../outside'
+assert_allowed "${normal_root}" 'git worktree add -b feature feature-x'
+assert_allowed "${normal_root}" 'git worktree add --detach feature-x'
+
+# A `cd` earlier in the line is where the relative path is measured from.
+assert_denied "${normal_root}" 'cd /tmp && git worktree add feature-x'
 
 # --- worktree placement, bare layout: flat beside the bare directory ---
 assert_allowed "${bare_root}" "git worktree add ${bare_home}/feature-y"
