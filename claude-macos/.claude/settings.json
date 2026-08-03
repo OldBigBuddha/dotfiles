@@ -29,8 +29,19 @@
     ],
     "defaultMode": "auto"
   },
-  "model": "opus[1m]",
+  "model": "sonnet",
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/block-sleep.sh"
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write|MultiEdit",
@@ -65,7 +76,8 @@
   "enabledPlugins": {
     "flatt-devrel-skills@flatt-security-agent-skills": true,
     "pr-review-toolkit@claude-plugins-official": true,
-    "suberu@suberu": true
+    "suberu@suberu": true,
+    "flatt-development-skills@flatt-security-agent-skills": true
   },
   "extraKnownMarketplaces": {
     "flatt-security-agent-skills": {
