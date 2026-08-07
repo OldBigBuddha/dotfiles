@@ -39,7 +39,8 @@ When you run `stow package-name`, files are symlinked: `~/dotfiles/package-name/
 
 **Cross-platform (macOS):**
 - **claude-macos**: Claude Code settings and custom commands
-- **git-macos**: macOS-specific git settings (1Password SSH signing)
+- **git-macos**: macOS-specific git settings (Secure Enclave SSH signing)
+- **git-linux**: Linux-specific git settings (1Password SSH signing)
 - **zsh-macos**: Shell configuration (.zshrc, .zshenv, .zprofile) - sources zsh
 
 > **Adding OS-specific config**: When a common package needs OS-specific settings, create `xxx-macos` (or `xxx-linux`) with only the OS-specific parts. Use include/source to load them. See git/git-macos as reference.
@@ -122,10 +123,13 @@ This dotfiles repository should have its own CLAUDE.md (this file) for repositor
 
 ### git + git-macos Packages
 
-- `git`: Core `.gitconfig` and `.config/git/ignore`
-- `git-macos`: macOS-specific settings in `.config/git/local.inc` (1Password SSH signing)
+- `git`: Core `.gitconfig`, `.config/git/ignore` and `.config/git/allowed_signers`
+- `git-macos`: `.config/git/local.inc` — signs with a Secure Enclave key via `~/.local/bin/ssh-sign`
+- `git-linux`: `.config/git/local.inc` — signs with the 1Password-managed key via `op-ssh-sign`
 
-The `.gitconfig` includes `~/.config/git/local.inc` which is provided by the OS-specific package.
+The `.gitconfig` includes `~/.config/git/local.inc` which is provided by the OS-specific package. `user.signingkey` and `gpg.ssh.program` live there, never in the shared `.gitconfig`, because the Secure Enclave key cannot leave the machine it was created on.
+
+Run `setup-git-signing-key` once per Mac to create the Secure Enclave key, then register its public key on GitHub as a **Signing key** and append it to `git/.config/git/allowed_signers`.
 
 ### nvim Package
 

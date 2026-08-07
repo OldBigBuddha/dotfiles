@@ -29,11 +29,15 @@ COMMON=(gh git mise nvim starship yazi zsh)
 # Cross-platform packages (with OS suffix)
 CROSS_PLATFORM=(claude git zsh)
 
-# Install common packages first
+# Install common packages first.
+# --no-folding keeps target directories real instead of symlinking a whole
+# package subtree. Without it, `stow git` turns ~/.config/git into a symlink to
+# the git package, and the later `stow git-macos` writes local.inc *inside* the
+# git package rather than into ~/.config/git.
 for package in "${COMMON[@]}"; do
     if [[ -d "$package" ]]; then
         echo "📝 Stowing $package..."
-        stow -v "$package"
+        stow -v --no-folding "$package"
     fi
 done
 
