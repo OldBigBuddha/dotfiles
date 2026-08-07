@@ -1,5 +1,13 @@
 # macOS-specific git configuration
 
-# 1Password SSH signing
+# Secure Enclave SSH signing.
+#
+# The key lives inside the Secure Enclave and never leaves the machine, so it
+# cannot be synced between machines. ~/.ssh/id_git_sign is only a reference to
+# it, not the private key itself. Run `setup-git-signing-key` once per Mac to
+# create the key and these files.
+[user]
+	signingkey = ~/.ssh/id_git_sign
+
 [gpg "ssh"]
-	program = "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
+	program = ~/.local/bin/ssh-sign

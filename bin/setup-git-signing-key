@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Create the git commit signing key inside the Secure Enclave (macOS only).
+#
+# Run this once per Mac. The key never leaves the Secure Enclave, so it cannot
+# be synced between machines: every Mac gets its own key, registered separately
+# on GitHub. Idempotent -- re-running is a no-op once the key files exist.
+#
+# Usage:
+#   setup-git-signing-key
+
+readonly KEY_LABEL="git-sign"
+readonly SK_PROVIDER="/usr/lib/ssh-keychain.dylib"
+readonly KEY_PATH="${HOME}/.ssh/id_git_sign"
+
+if [[ "$(uname)" != "Darwin" ]]; then
+  echo "ℹ️  Not macOS -- Secure Enclave signing is unavailable, nothing to do."
+  exit 0
+fi
+
+if [[ -f "${KEY_PATH}" ]]; then
+  echo "✅ ${KEY_PATH} already exists, nothing to do."
+  exit 0
+fi
+
+if [[ ! -f "${SK_PROVIDER}" ]]; then
+  echo "❌ ${SK_PROVIDER} not found. This macOS version cannot be used." >&2
+  exit 1
+fi
+
+echo "🔐 Creating the Secure Enclave identity (label: ${KEY_LABEL})..."
+# -k p-256-ne : ECDSA P-256 key generated in the Secure Enclave
+# -t none     : no biometric/password prompt when signing, so unattended
+#               coding agents are never blocked on Touch ID
+/usr/sbin/sc_auth create-ctk-identity -l "${KEY_LABEL}" -k p-256-ne -t none
+
+# `ssh-keygen -K` writes id_ecdsa_sk_rk{,.pub} into the current directory,
+# so run it in a scratch directory to keep ${HOME} clean.
+workdir="$(mktemp -d)"
+trap 'rm -rf "${workdir}"' EXIT
+
+echo "🔑 Exporting the SSH key files..."
+(cd "${workdir}" && /usr/bin/ssh-keygen -w "${SK_PROVIDER}" -K -N "")
+
+mkdir -p "${HOME}/.ssh"
+mv "${workdir}/id_ecdsa_sk_rk" "${KEY_PATH}"
+mv "${workdir}/id_ecdsa_sk_rk.pub" "${KEY_PATH}.pub"
+chmod 600 "${KEY_PATH}"
+chmod 644 "${KEY_PATH}.pub"
+
+echo ""
+echo "✅ Created ${KEY_PATH} and ${KEY_PATH}.pub"
+echo ""
+echo "Public key:"
+cat "${KEY_PATH}.pub"
+echo ""
+echo "Next steps:"
+echo "  1. Register the public key on GitHub as a *Signing key*:"
+echo "     https://github.com/settings/ssh/new (Key type: Signing Key)"
+echo "  2. Append it to git/.config/git/allowed_signers in this repo, in the form:"
+echo "     <email> namespaces=\"git\" <public key>"
+echo "  3. Re-stow to pick up the change: stow -R git git-macos"
+echo ""

@@ -1,0 +1,11 @@
+# Public keys trusted for `git log --show-signature` verification.
+#
+# Secure Enclave keys are generated per machine and cannot be synced, so append
+# a line here after running `setup-git-signing-key` on a new Mac (the script
+# prints the public key). Public keys only -- safe to commit.
+
+# Linux dev machine (1Password)
+s.yamakawa@flatt.tech namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDvQze+HOHpQPzD5Uv6yu+wtUh+Zpe9I2HXn1KwadphZ
+
+# MacBook (Secure Enclave)
+s.yamakawa@flatt.tech namespaces="git" sk-ecdsa-sha2-nistp256@openssh.com AAAAInNrLWVjZHNhLXNoYTItbmlzdHAyNTZAb3BlbnNzaC5jb20AAAAIbmlzdHAyNTYAAABBBCX/R1HQ7ZRmOyZkE9XFVOw4ZF6NOOnkUhzwxi18sZrnULfswUVKF9okmXatHwtW8gdGZ+e9yaRbsX4wlb9ioU4AAAAEc3NoOg==

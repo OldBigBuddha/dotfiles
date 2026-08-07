@@ -23,7 +23,8 @@ Personal dotfiles managed with GNU Stow.
 ### Cross-platform (macOS)
 
 - **claude-macos**: Claude Code settings and custom commands
-- **git-macos**: macOS-specific git settings (1Password SSH signing)
+- **git-macos**: macOS-specific git settings (Secure Enclave SSH signing)
+- **git-linux**: Linux-specific git settings (1Password SSH signing)
 - **zsh-macos**: Shell configuration (.zshrc, .zshenv, .zprofile) - sources zsh
 
 > **Note**: When OS-specific configuration is needed for a common package, create a new `xxx-macos` (or `xxx-linux`) package with only the OS-specific settings, following the git/git-macos pattern.
@@ -49,7 +50,12 @@ mise install   # picks up ~/.config/mise/config.toml from the `mise` package
 
 # 5. Install Claude Code
 curl -fsSL https://claude.ai/install.sh | bash
+
+# 6. Create the commit signing key (macOS only, once per machine)
+setup-git-signing-key
 ```
+
+> Step 6 generates a key inside the Secure Enclave and prints its public key. Register it on GitHub as a **Signing key**, then append it to `git/.config/git/allowed_signers` — the script prints both reminders. Secure Enclave keys cannot leave the machine, so every Mac has its own key. On Linux, signing goes through 1Password (`git-linux`) and no extra step is needed.
 
 > Language runtimes (node, python, go, rust, etc.) are intentionally not in `Brewfile`. They are pinned to mise via `HOMEBREW_FORBIDDEN_FORMULAE` in `zsh-macos/.zshenv`.
 

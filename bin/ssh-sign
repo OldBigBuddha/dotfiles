@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# ssh-keygen wrapper that signs with the Secure Enclave key (macOS).
+#
+# git invokes this via `gpg.ssh.program`. ssh-keygen needs SSH_SK_PROVIDER to
+# reach the key stored in the Secure Enclave, and git gives us no way to pass
+# an environment variable, hence this shim.
+#
+# NOTE: `set -x` is deliberately omitted (unlike the usual convention here).
+# git surfaces this script's stderr, so a trace would be printed on every
+# single commit.
+
+export SSH_SK_PROVIDER=/usr/lib/ssh-keychain.dylib
+exec /usr/bin/ssh-keygen "$@"
