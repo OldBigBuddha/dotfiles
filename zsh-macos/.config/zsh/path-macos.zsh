@@ -24,9 +24,8 @@ path=(
 [ -f "$HOME/.local/share/google-cloud-sdk/path.zsh.inc" ] && source "$HOME/.local/share/google-cloud-sdk/path.zsh.inc"
 [ -f "$HOME/.local/share/google-cloud-sdk/completion.zsh.inc" ] && source "$HOME/.local/share/google-cloud-sdk/completion.zsh.inc"
 
-# Homebrew completions and plugins
+# Homebrew completions
 if type brew &>/dev/null; then
   FPATH=$(brew --prefix)/share/zsh-completions:$FPATH
-  source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
   autoload -Uz compinit && compinit
 fi

@@ -51,6 +51,11 @@ command -v curl >/dev/null 2>&1 || fail "curl was not installed"
 [[ -x "$HOME/.local/bin/mise" ]] || fail "mise was not installed"
 "$HOME/.local/bin/mise" exec herdr -- herdr --version >/dev/null || \
   fail "Herdr was not installed through mise"
+zsh_autosuggestions="$HOME/.local/share/zsh/plugins/zsh-autosuggestions"
+[[ -d "$zsh_autosuggestions/.git" ]] || fail "zsh-autosuggestions was not cloned"
+[[ "$(git -C "$zsh_autosuggestions" rev-parse HEAD)" == \
+  "e52ee8ca55bcc56a17c828767a3f98f22a68d4eb" ]] || \
+  fail "zsh-autosuggestions is not at the pinned commit"
 installed_zsh_package="$(dpkg-query -W -f='${Version}' zsh 2>/dev/null || true)"
 candidate_zsh_package="$(apt-cache policy zsh | awk '/Candidate:/ { print $2; exit }')"
 [[ -n "$installed_zsh_package" && -n "$candidate_zsh_package" ]] || \
@@ -84,6 +89,7 @@ git check-ignore -q gh/.config/gh/hosts.yml || fail "GitHub authentication state
 DOTFILES_E2E_REPO="$test_repo" zsh -lic '
   [[ -o sharehistory ]] || exit 1
   (( $+functions[cdr] )) || exit 1
+  (( $+functions[_zsh_autosuggest_start] )) || exit 1
   command -v git-root >/dev/null || exit 1
   command -v herdr >/dev/null || exit 1
   cd "$DOTFILES_E2E_REPO/zsh/.config"

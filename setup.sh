@@ -92,6 +92,57 @@ case "$OS" in
         ;;
 esac
 
+# Zsh plugins are plain Git checkouts pinned to reviewed commits. They live in
+# the user data directory rather than being supplied by an OS package manager.
+install_zsh_plugin() {
+    local name="$1"
+    local repository="$2"
+    local commit="$3"
+    local plugin_root="${XDG_DATA_HOME:-$HOME/.local/share}/zsh/plugins"
+    local plugin_dir="$plugin_root/$name"
+    local current_origin
+
+    mkdir -p "$plugin_root"
+
+    if [[ -e "$plugin_dir" && ! -d "$plugin_dir/.git" ]]; then
+        echo "❌ Cannot manage $plugin_dir because it is not a Git checkout." >&2
+        exit 1
+    fi
+
+    if [[ ! -d "$plugin_dir/.git" ]]; then
+        echo "📦 Installing zsh plugin: $name"
+        git clone --quiet "$repository" "$plugin_dir"
+    fi
+
+    current_origin="$(git -C "$plugin_dir" remote get-url origin 2>/dev/null || true)"
+    if [[ "$current_origin" != "$repository" ]]; then
+        echo "❌ Unexpected origin for $plugin_dir: ${current_origin:-missing}" >&2
+        echo "   Expected: $repository" >&2
+        exit 1
+    fi
+
+    if [[ -n "$(git -C "$plugin_dir" status --porcelain)" ]]; then
+        echo "❌ Refusing to update modified zsh plugin checkout: $plugin_dir" >&2
+        exit 1
+    fi
+
+    if ! git -C "$plugin_dir" cat-file -e "${commit}^{commit}" 2>/dev/null; then
+        git -C "$plugin_dir" fetch --quiet --depth 1 origin "$commit"
+    fi
+    git -C "$plugin_dir" checkout --quiet --detach "$commit"
+}
+
+if ! command -v git >/dev/null 2>&1; then
+    echo "❌ Git is required to install zsh plugins." >&2
+    exit 1
+fi
+
+# zsh-autosuggestions v0.7.1
+install_zsh_plugin \
+    zsh-autosuggestions \
+    https://github.com/zsh-users/zsh-autosuggestions.git \
+    e52ee8ca55bcc56a17c828767a3f98f22a68d4eb
+
 # Herdr is a portable userland tool, so install it through mise on both
 # supported operating systems instead of adding it to APT or Homebrew.
 mise_bin="$(command -v mise 2>/dev/null || true)"
