@@ -99,6 +99,23 @@ fi
 [[ ! -e "$HOME/.config/gh/hosts.yml" ]] || fail "GitHub authentication state was stowed"
 git check-ignore -q gh/.config/gh/hosts.yml || fail "GitHub authentication state is not ignored"
 
+# Agent command runners commonly start a non-interactive, non-login shell with
+# only a minimal inherited PATH. The environment must still expose mise-managed
+# tools without loading interactive completion, plugins, or prompt hooks.
+env -i \
+  HOME="$HOME" \
+  PATH=/usr/bin:/bin \
+  TERM=dumb \
+  zsh -c '
+    [[ ! -o interactive ]] || exit 1
+    [[ ! -o login ]] || exit 1
+    [[ "${commands[herdr]-}" == "$HOME/.local/share/mise/shims/herdr" ]] || exit 1
+    [[ "${commands[git-root]-}" == "$HOME/.local/bin/git-root" ]] || exit 1
+    (( ! $+functions[compdef] )) || exit 1
+    (( ! $+functions[_zsh_autosuggest_start] )) || exit 1
+    herdr --version >/dev/null
+  ' || fail "non-interactive, non-login zsh environment failed"
+
 DOTFILES_E2E_REPO="$test_repo" zsh -lic '
   [[ -o sharehistory ]] || exit 1
   (( $+functions[cdr] )) || exit 1

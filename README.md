@@ -93,6 +93,9 @@ only with a public key; never add a private key or authentication token.
 
 ## Tool ownership
 
+See [Zsh configuration policy](docs/zsh.md) for the startup-file boundaries,
+PATH ownership, AI-agent execution contract, and acceptance checks.
+
 `setup.sh` is a minimal POSIX `sh` bootstrap. It detects macOS versus Linux,
 rejects unsupported Linux distributions, and installs missing `git`, `curl`,
 `stow`, and `zsh` prerequisites through APT on Linux or Homebrew where needed
@@ -106,6 +109,17 @@ scripts to `~/.local/bin`, installs mise when needed, and installs Herdr through
 mise on both macOS and Linux. It does not install a general software catalog.
 Plugin updates are explicit commit changes in
 `zsh/.config/zsh/plugins.toml`; shell startup never fetches from the network.
+
+The Zsh environment also supports commands launched by local AI agents, IDEs,
+and other non-interactive, non-login Zsh processes. In a non-interactive shell,
+each OS-specific `.zshenv` adds
+`${XDG_DATA_HOME:-$HOME/.local/share}/mise/shims` ahead of `~/.local/bin`,
+making mise-managed tools available without a prompt hook. Interactive shells
+continue to use `mise activate zsh` so directory changes and mise environment
+variables work normally. Scripts and agent runtimes that do not launch Zsh
+must inherit this `PATH` from their parent process or invoke tools through
+`mise exec`; remote and cloud agents should use their own explicit setup
+scripts rather than depend on local shell startup files.
 
 This repository intentionally follows each supported distribution's zsh
 package rather than imposing an upstream version floor or compiling a login

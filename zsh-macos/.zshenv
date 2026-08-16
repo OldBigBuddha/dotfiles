@@ -31,6 +31,15 @@ path=(
     ${path}
 )
 
+if [[ ! -o interactive ]]; then
+    dotfiles_mise_data_dir="${XDG_DATA_HOME:-$HOME/.local/share}/mise"
+    path=(
+        $dotfiles_mise_data_dir/shims(N-/)
+        ${path}
+    )
+    unset dotfiles_mise_data_dir
+fi
+
 
 manpath=(
     /usr/local/share/man(N-/)
