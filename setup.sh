@@ -97,6 +97,22 @@ case "$OS" in
         ;;
 esac
 
+# Herdr is a portable userland tool, so install it through mise on both
+# supported operating systems instead of adding it to APT or Homebrew.
+mise_bin="$(command -v mise 2>/dev/null || true)"
+if [[ -z "$mise_bin" && -x "$HOME/.local/bin/mise" ]]; then
+    mise_bin="$HOME/.local/bin/mise"
+fi
+if [[ -z "$mise_bin" ]]; then
+    echo "📦 mise not found. Installing..."
+    curl --proto '=https' --tlsv1.2 -sSf https://mise.run | sh
+    mise_bin="$HOME/.local/bin/mise"
+fi
+if [[ ! -x "$mise_bin" ]]; then
+    echo "❌ mise installation did not create an executable at $mise_bin." >&2
+    exit 1
+fi
+
 # macOS-only packages
 MACOS_ONLY=(aerospace sketchybar wezterm)
 
@@ -159,11 +175,15 @@ if [[ -d "bin" ]]; then
     done
 fi
 
+echo "📦 Installing Herdr through mise..."
+"$mise_bin" install herdr
+"$mise_bin" exec herdr -- herdr --version
+
 echo ""
 echo "✅ Dotfiles setup complete!"
 echo ""
 echo "Next steps:"
-echo "  1. Install mise if needed: curl https://mise.run | sh"
-echo "  2. Install userland tools: ~/.local/bin/mise install"
+echo "  1. Install the remaining userland tools: $mise_bin install"
+echo "  2. Install repository development dependencies: $mise_bin exec -- pnpm install --frozen-lockfile"
 echo "  3. Restart your shell: exec zsh"
 echo ""

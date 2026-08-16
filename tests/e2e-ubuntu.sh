@@ -48,6 +48,9 @@ command -v stow >/dev/null 2>&1 || fail "GNU Stow was not installed"
 command -v zsh >/dev/null 2>&1 || fail "zsh was not installed"
 command -v git >/dev/null 2>&1 || fail "Git was not installed"
 command -v curl >/dev/null 2>&1 || fail "curl was not installed"
+[[ -x "$HOME/.local/bin/mise" ]] || fail "mise was not installed"
+"$HOME/.local/bin/mise" exec herdr -- herdr --version >/dev/null || \
+  fail "Herdr was not installed through mise"
 zsh -fc 'autoload -Uz is-at-least; is-at-least 5.9 "$ZSH_VERSION"' || \
   fail "zsh 5.9 or newer was not installed"
 
@@ -78,6 +81,7 @@ DOTFILES_E2E_REPO="$test_repo" zsh -lic '
   [[ -o sharehistory ]] || exit 1
   (( $+functions[cdr] )) || exit 1
   command -v git-root >/dev/null || exit 1
+  command -v herdr >/dev/null || exit 1
   cd "$DOTFILES_E2E_REPO/zsh/.config"
   cdr
   [[ "$PWD" == "$DOTFILES_E2E_REPO" ]]

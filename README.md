@@ -40,8 +40,8 @@ cd ~/dotfiles
 brew bundle --file=Brewfile
 ./setup.sh
 
-curl https://mise.run | sh
 ~/.local/bin/mise install
+~/.local/bin/mise exec -- pnpm install --frozen-lockfile
 exec zsh
 ```
 
@@ -65,8 +65,8 @@ cd ~/dotfiles
 
 ./setup.sh
 
-curl https://mise.run | sh
 ~/.local/bin/mise install
+~/.local/bin/mise exec -- pnpm install --frozen-lockfile
 
 chsh -s "$(command -v zsh)"
 exec zsh
@@ -98,8 +98,9 @@ installs GNU Stow when it is missing (Homebrew on macOS, APT on Ubuntu/Debian),
 and installs missing `git`, `curl`, `stow`, and `zsh` bootstrap prerequisites
 through APT on Linux. It also requires zsh 5.9 or newer and verifies that an
 APT-managed zsh is not older than the candidate in the currently configured
-package indexes. It then applies the appropriate packages and copies small
-helper scripts to `~/.local/bin`. It does not install a general software catalog.
+package indexes. It then applies the appropriate packages, copies small helper
+scripts to `~/.local/bin`, installs mise when needed, and installs Herdr through
+mise on both macOS and Linux. It does not install a general software catalog.
 
 Ubuntu 24.04's supported package is zsh 5.9. Upstream may publish newer patch
 releases during the LTS lifetime; this repository intentionally follows the
@@ -107,9 +108,14 @@ Ubuntu package rather than compiling a login shell from source. Run `sudo apt
 update` before `setup.sh` when you need the candidate-version check to reflect
 the newest repository metadata.
 
-`mise install` installs the portable tools declared in
+Herdr is installed during `setup.sh` so it is available immediately. A later
+`mise install` installs or updates all portable tools declared in
 `mise/.config/mise/config.toml`, including Node.js, Python, Go, Rust, Neovim,
-GitHub CLI, ripgrep, fd, fzf, jq, bat, lsd, starship, yazi, and zoxide.
+GitHub CLI, Herdr, pnpm, ripgrep, fd, fzf, jq, bat, lsd, starship, yazi, and
+zoxide.
+`pnpm install --frozen-lockfile` installs the repository's secretlint
+dependencies and activates the required local pre-commit hook. A commit fails
+when secretlint reports a possible secret or the hook cannot run.
 
 The macOS `Brewfile` is limited to bootstrap/system integration and macOS-only
 applications. `mcfly`, `zsh-autosuggestions`, and `python-yq` remain Homebrew
