@@ -21,6 +21,3 @@
 
 [tag]
 	gpgSign = true
-
-[safe]
-	directory = /Users/pc0038/work_dir/puchisunaba/phase2
