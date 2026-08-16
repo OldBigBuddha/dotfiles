@@ -97,6 +97,15 @@ When adding or modifying dotfiles:
 3. Test the configuration
 4. Commit changes following conventional commit format: `feat(package): description`
 
+### Linux E2E
+
+```bash
+docker run --rm \
+  --volume "$PWD:/dotfiles:ro" \
+  ubuntu:24.04 \
+  bash /dotfiles/tests/e2e-ubuntu.sh
+```
+
 ## Critical Constraints
 
 ### Security Exclusions

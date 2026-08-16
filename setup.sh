@@ -55,6 +55,8 @@ case "$OS" in
         ;;
     Linux)
         apt_packages=()
+        command -v git >/dev/null 2>&1 || apt_packages+=(git)
+        command -v curl >/dev/null 2>&1 || apt_packages+=(curl)
         command -v stow >/dev/null 2>&1 || apt_packages+=(stow)
         command -v zsh >/dev/null 2>&1 || apt_packages+=(zsh)
 

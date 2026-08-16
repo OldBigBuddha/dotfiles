@@ -95,11 +95,11 @@ only with a public key; never add a private key or authentication token.
 
 `setup.sh` detects macOS versus Linux, rejects unsupported Linux distributions,
 installs GNU Stow when it is missing (Homebrew on macOS, APT on Ubuntu/Debian),
-and installs zsh through APT when Linux does not already provide it. On Linux it
-also requires zsh 5.9 or newer and verifies that an APT-managed zsh is not older
-than the candidate in the currently configured package indexes. It then applies
-the appropriate packages and copies small helper scripts to `~/.local/bin`. It
-does not install a general software catalog.
+and installs missing `git`, `curl`, `stow`, and `zsh` bootstrap prerequisites
+through APT on Linux. It also requires zsh 5.9 or newer and verifies that an
+APT-managed zsh is not older than the candidate in the currently configured
+package indexes. It then applies the appropriate packages and copies small
+helper scripts to `~/.local/bin`. It does not install a general software catalog.
 
 Ubuntu 24.04's supported package is zsh 5.9. Upstream may publish newer patch
 releases during the LTS lifetime; this repository intentionally follows the
@@ -152,3 +152,16 @@ Never commit generated credentials or authentication state, including:
 The Claude package contains selected static macOS settings only. Dynamic Claude
 directories such as history, debug data, session environments, and todos remain
 outside the package and must stay untracked.
+
+## Validation
+
+The Linux E2E runs the repository twice in a clean Ubuntu 24.04 container. It
+checks APT bootstrap, real Stow links, zsh startup, Git defaults, OS-specific
+package isolation, and credential-file exclusions.
+
+```bash
+docker run --rm \
+  --volume "$PWD:/dotfiles:ro" \
+  ubuntu:24.04 \
+  bash /dotfiles/tests/e2e-ubuntu.sh
+```
