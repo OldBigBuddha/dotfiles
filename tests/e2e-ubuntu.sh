@@ -39,6 +39,11 @@ mkdir -p "$HOME"
 cp -R "$source_root" "$test_repo"
 cd "$test_repo"
 
+[[ "$(head -n 1 setup.sh)" == "#!/bin/sh" ]] || \
+  fail "setup.sh is not a POSIX sh bootstrap"
+[[ "$(head -n 1 scripts/setup.zsh)" == "#!/usr/bin/env zsh" ]] || \
+  fail "the main setup is not a zsh script"
+
 # The first run exercises APT bootstrap; the second proves the applied state is
 # idempotent and does not require package installation again.
 DEBIAN_FRONTEND=noninteractive ./setup.sh
@@ -71,6 +76,7 @@ assert_link "$HOME/.config/mise/config.toml" "$test_repo/mise/.config/mise/confi
 assert_link "$HOME/.config/nvim/init.lua" "$test_repo/nvim/.config/nvim/init.lua"
 assert_link "$HOME/.config/starship.toml" "$test_repo/starship/.config/starship.toml"
 assert_link "$HOME/.config/yazi/yazi.toml" "$test_repo/yazi/.config/yazi/yazi.toml"
+assert_link "$HOME/.config/zsh/plugins.toml" "$test_repo/zsh/.config/zsh/plugins.toml"
 
 [[ -x "$HOME/.local/bin/git-root" ]] || fail "git-root was not installed"
 [[ -x "$HOME/.local/bin/git-pwd" ]] || fail "git-pwd was not installed"

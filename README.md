@@ -93,17 +93,19 @@ only with a public key; never add a private key or authentication token.
 
 ## Tool ownership
 
-`setup.sh` detects macOS versus Linux, rejects unsupported Linux distributions,
-installs GNU Stow when it is missing (Homebrew on macOS, APT on Ubuntu/Debian),
-and installs missing `git`, `curl`, `stow`, and `zsh` bootstrap prerequisites
-through APT on Linux. It verifies that an APT-managed zsh is not older than the
-candidate in the currently configured package indexes. It then applies the
-appropriate packages, installs commit-pinned Zsh plugins under
-`${XDG_DATA_HOME:-$HOME/.local/share}/zsh/plugins`, copies small helper scripts
-to `~/.local/bin`, installs mise when needed, and installs Herdr through mise on
-both macOS and Linux. It does not install a general software catalog. Plugin
-updates are explicit commit changes in `setup.sh`; shell startup never fetches
-from the network.
+`setup.sh` is a minimal POSIX `sh` bootstrap. It detects macOS versus Linux,
+rejects unsupported Linux distributions, and installs missing `git`, `curl`,
+`stow`, and `zsh` prerequisites through APT on Linux or Homebrew where needed
+on macOS. It then replaces itself with `scripts/setup.zsh`; all remaining
+environment setup runs under Zsh with `set -euo pipefail`. The Zsh setup
+verifies that an APT-managed zsh is not older than the candidate in the
+currently configured package indexes, applies the appropriate packages, and
+installs commit-pinned Zsh plugins under
+`${XDG_DATA_HOME:-$HOME/.local/share}/zsh/plugins`. It also copies small helper
+scripts to `~/.local/bin`, installs mise when needed, and installs Herdr through
+mise on both macOS and Linux. It does not install a general software catalog.
+Plugin updates are explicit commit changes in
+`zsh/.config/zsh/plugins.toml`; shell startup never fetches from the network.
 
 This repository intentionally follows each supported distribution's zsh
 package rather than imposing an upstream version floor or compiling a login
