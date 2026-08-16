@@ -93,6 +93,9 @@ only with a public key; never add a private key or authentication token.
 
 ## Tool ownership
 
+See [Zsh configuration policy](docs/zsh.md) for the startup-file boundaries,
+PATH ownership, AI-agent execution contract, and acceptance checks.
+
 `setup.sh` is a minimal POSIX `sh` bootstrap. It detects macOS versus Linux,
 rejects unsupported Linux distributions, and installs missing `git`, `curl`,
 `stow`, and `zsh` prerequisites through APT on Linux or Homebrew where needed
