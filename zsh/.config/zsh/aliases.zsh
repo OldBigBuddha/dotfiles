@@ -9,8 +9,10 @@ alias awslocal="AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test AWS_DEFAULT_RE
 # neovim
 alias vim="nvim"
 
-# git-root
-alias cdr="cd $(git-root)"
+# Change to the current repository root when invoked.
+function cdr() {
+	builtin cd -- "$(git-root)"
+}
 
 # yazi shell wrapper
 function y() {

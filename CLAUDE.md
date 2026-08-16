@@ -10,7 +10,7 @@ This is a personal dotfiles repository managed with **GNU Stow**, a symlink farm
 
 ### GNU Stow Package Structure
 
-Each package directory mirrors the target filesystem structure from `$HOME`. Packages follow a naming convention: `xxx-macos` for cross-platform configs (with future `xxx-linux` or `xxx-common` variants), and plain names for macOS-only tools:
+Each package directory mirrors the target filesystem structure from `$HOME`. Plain package names contain common configuration; `xxx-macos` and `xxx-linux` contain only operating-system-specific overlays. A few macOS-only applications retain plain historical package names.
 
 ```
 package-name/
@@ -37,11 +37,13 @@ When you run `stow package-name`, files are symlinked: `~/dotfiles/package-name/
 - **yazi**: Yazi file manager configuration
 - **zsh**: Shared shell settings (history, keybindings, aliases, tool init)
 
-**Cross-platform (macOS):**
+**OS-specific overlays:**
 - **claude-macos**: Claude Code settings and custom commands
 - **git-macos**: macOS-specific git settings (Secure Enclave SSH signing)
-- **git-linux**: Linux-specific git settings (1Password SSH signing)
+- **git-linux**: optional Linux-specific git settings (1Password SSH signing)
 - **zsh-macos**: Shell configuration (.zshrc, .zshenv, .zprofile) - sources zsh
+- **zsh-linux**: Minimal Linux startup files - sources zsh
+- **bin-macos**: macOS Secure Enclave signing helpers
 
 > **Adding OS-specific config**: When a common package needs OS-specific settings, create `xxx-macos` (or `xxx-linux`) with only the OS-specific parts. Use include/source to load them. See git/git-macos as reference.
 
@@ -53,13 +55,13 @@ When you run `stow package-name`, files are symlinked: `~/dotfiles/package-name/
 # Install all Homebrew packages (taps, brews, casks)
 brew bundle --file=Brewfile
 
-# Automated stow setup (installs stow if needed, then all packages)
+# Automated setup (installs stow and Linux zsh if needed, then applies packages)
 ./setup.sh
 
-# mise (language runtimes — node/python/go/rust). Brew is blocked from
-# installing these via HOMEBREW_FORBIDDEN_FORMULAE in zsh-macos/.zshenv.
+# mise (language runtimes and portable userland tools). Brew is blocked from
+# installing language runtimes via HOMEBREW_FORBIDDEN_FORMULAE.
 curl https://mise.run | sh
-mise install
+~/.local/bin/mise install
 
 # Claude Code
 curl -fsSL https://claude.ai/install.sh | bash
@@ -100,10 +102,10 @@ When adding or modifying dotfiles:
 ### Security Exclusions
 
 **NEVER** commit these files (they contain secrets):
-- `gh/hosts.yml` - GitHub authentication tokens
+- `gh/.config/gh/hosts.yml` - GitHub authentication tokens
 - Any Claude Code dynamic data (history.jsonl, debug/, session-env/, todos/)
 
-These files are excluded via package structure, not .gitignore, and remain in their original locations.
+GitHub CLI authentication state is explicitly ignored by `.gitignore`. Claude dynamic files are excluded by keeping only selected static files in the Stow package.
 
 ### Stow Conflicts
 
@@ -121,13 +123,13 @@ Contains global Claude Code configuration that applies to ALL projects:
 
 This dotfiles repository should have its own CLAUDE.md (this file) for repository-specific guidance.
 
-### git + git-macos Packages
+### Git packages
 
 - `git`: Core `.gitconfig`, `.config/git/ignore` and `.config/git/allowed_signers`
 - `git-macos`: `.config/git/local.inc` — signs with a Secure Enclave key via `~/.local/bin/ssh-sign`
-- `git-linux`: `.config/git/local.inc` — signs with the 1Password-managed key via `op-ssh-sign`
+- `git-linux`: optional `.config/git/local.inc` — signs with the 1Password-managed key via `op-ssh-sign`
 
-The `.gitconfig` includes `~/.config/git/local.inc` which is provided by the OS-specific package. `user.signingkey` and `gpg.ssh.program` live there, never in the shared `.gitconfig`, because the Secure Enclave key cannot leave the machine it was created on.
+The `.gitconfig` includes `~/.config/git/local.inc` when an OS-specific signing package provides it. Signing keys, programs, and the enablement flags stay out of the shared config so a fresh Ubuntu installation can use Git before an optional signing provider is installed.
 
 Run `setup-git-signing-key` once per Mac to create the Secure Enclave key, then register its public key on GitHub as a **Signing key** and append it to `git/.config/git/allowed_signers`.
 

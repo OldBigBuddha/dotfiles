@@ -9,5 +9,18 @@
 [user]
 	signingkey = ~/.ssh/id_git_sign
 
+[gpg]
+	format = ssh
+
 [gpg "ssh"]
 	program = ~/.local/bin/ssh-sign
+	allowedSignersFile = ~/.config/git/allowed_signers
+
+[commit]
+	gpgsign = true
+
+[tag]
+	gpgSign = true
+
+[safe]
+	directory = /Users/pc0038/work_dir/puchisunaba/phase2
