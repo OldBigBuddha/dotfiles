@@ -39,10 +39,22 @@ mkdir -p "$HOME"
 cp -R "$source_root" "$test_repo"
 cd "$test_repo"
 
+[[ "$(head -n 1 setup.sh)" == "#!/bin/sh" ]] || \
+  fail "setup.sh is not a POSIX sh bootstrap"
+[[ "$(head -n 1 scripts/setup.zsh)" == "#!/usr/bin/env zsh" ]] || \
+  fail "the main setup is not a zsh script"
+
 # The first run exercises APT bootstrap; the second proves the applied state is
 # idempotent and does not require package installation again.
 DEBIAN_FRONTEND=noninteractive ./setup.sh
 DEBIAN_FRONTEND=noninteractive ./setup.sh
+
+# A user's HTTPS-to-SSH rewrite must not change the literal origin comparison.
+# The pinned commit is already present, so this remains an offline check.
+GIT_CONFIG_COUNT=1 \
+  GIT_CONFIG_KEY_0='url.git@github.com:.insteadOf' \
+  GIT_CONFIG_VALUE_0='https://github.com/' \
+  scripts/install-zsh-plugins.zsh zsh/.config/zsh/plugins.toml
 
 command -v stow >/dev/null 2>&1 || fail "GNU Stow was not installed"
 command -v zsh >/dev/null 2>&1 || fail "zsh was not installed"
@@ -51,8 +63,17 @@ command -v curl >/dev/null 2>&1 || fail "curl was not installed"
 [[ -x "$HOME/.local/bin/mise" ]] || fail "mise was not installed"
 "$HOME/.local/bin/mise" exec herdr -- herdr --version >/dev/null || \
   fail "Herdr was not installed through mise"
-zsh -fc 'autoload -Uz is-at-least; is-at-least 5.9 "$ZSH_VERSION"' || \
-  fail "zsh 5.9 or newer was not installed"
+zsh_autosuggestions="$HOME/.local/share/zsh/plugins/zsh-autosuggestions"
+[[ -d "$zsh_autosuggestions/.git" ]] || fail "zsh-autosuggestions was not cloned"
+[[ "$(git -C "$zsh_autosuggestions" rev-parse HEAD)" == \
+  "e52ee8ca55bcc56a17c828767a3f98f22a68d4eb" ]] || \
+  fail "zsh-autosuggestions is not at the pinned commit"
+installed_zsh_package="$(dpkg-query -W -f='${Version}' zsh 2>/dev/null || true)"
+candidate_zsh_package="$(apt-cache policy zsh | awk '/Candidate:/ { print $2; exit }')"
+[[ -n "$installed_zsh_package" && -n "$candidate_zsh_package" ]] || \
+  fail "could not determine the installed and candidate zsh packages"
+dpkg --compare-versions "$installed_zsh_package" ge "$candidate_zsh_package" || \
+  fail "installed zsh is older than the APT candidate"
 
 assert_link "$HOME/.zshenv" "$test_repo/zsh-linux/.zshenv"
 assert_link "$HOME/.zshrc" "$test_repo/zsh-linux/.zshrc"
@@ -62,6 +83,7 @@ assert_link "$HOME/.config/mise/config.toml" "$test_repo/mise/.config/mise/confi
 assert_link "$HOME/.config/nvim/init.lua" "$test_repo/nvim/.config/nvim/init.lua"
 assert_link "$HOME/.config/starship.toml" "$test_repo/starship/.config/starship.toml"
 assert_link "$HOME/.config/yazi/yazi.toml" "$test_repo/yazi/.config/yazi/yazi.toml"
+assert_link "$HOME/.config/zsh/plugins.toml" "$test_repo/zsh/.config/zsh/plugins.toml"
 
 [[ -x "$HOME/.local/bin/git-root" ]] || fail "git-root was not installed"
 [[ -x "$HOME/.local/bin/git-pwd" ]] || fail "git-pwd was not installed"
@@ -80,6 +102,8 @@ git check-ignore -q gh/.config/gh/hosts.yml || fail "GitHub authentication state
 DOTFILES_E2E_REPO="$test_repo" zsh -lic '
   [[ -o sharehistory ]] || exit 1
   (( $+functions[cdr] )) || exit 1
+  (( $+functions[compdef] )) || exit 1
+  (( $+functions[_zsh_autosuggest_start] )) || exit 1
   command -v git-root >/dev/null || exit 1
   command -v herdr >/dev/null || exit 1
   cd "$DOTFILES_E2E_REPO/zsh/.config"

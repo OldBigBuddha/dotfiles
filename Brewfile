@@ -14,7 +14,6 @@ brew "git"
 brew "gnupg"
 
 # macOS shell integration
-brew "zsh-autosuggestions"
 brew "mcfly"
 brew "python-yq"
 

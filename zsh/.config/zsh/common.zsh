@@ -19,6 +19,18 @@ export MCFLY_HISTORY_LIMIT=10000
 # colors
 autoload -Uz colors && colors
 
+# Completion is shared. OS-specific configuration may extend fpath before this
+# file is loaded, but initialization belongs here on both macOS and Linux.
+autoload -Uz compinit && compinit
+
+# Plugins installed by setup.sh. Keep startup offline and tolerate a missing
+# checkout so that recovery shells remain usable before setup is rerun.
+zsh_plugin_root="${XDG_DATA_HOME:-$HOME/.local/share}/zsh/plugins"
+if [[ -r "$zsh_plugin_root/zsh-autosuggestions/zsh-autosuggestions.zsh" ]]; then
+  source "$zsh_plugin_root/zsh-autosuggestions/zsh-autosuggestions.zsh"
+fi
+unset zsh_plugin_root
+
 # mise is installed in ~/.local/bin on both supported operating systems.
 if command -v mise >/dev/null 2>&1; then
   eval "$(mise activate zsh)"

@@ -1,0 +1,5 @@
+[[plugins]]
+name = "zsh-autosuggestions"
+repository = "https://github.com/zsh-users/zsh-autosuggestions.git"
+# v0.7.1
+commit = "e52ee8ca55bcc56a17c828767a3f98f22a68d4eb"
