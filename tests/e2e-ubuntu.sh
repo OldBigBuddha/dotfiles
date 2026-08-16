@@ -36,7 +36,7 @@ trap 'rm -rf "$test_root"' EXIT
 export HOME="$test_root/home"
 test_repo="$HOME/dotfiles"
 mkdir -p "$HOME"
-cp -a "$source_root" "$test_repo"
+cp -R "$source_root" "$test_repo"
 cd "$test_repo"
 
 # The first run exercises APT bootstrap; the second proves the applied state is
