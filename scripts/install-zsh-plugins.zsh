@@ -21,7 +21,10 @@ install_zsh_plugin() {
         git clone --quiet "$repository" "$plugin_dir"
     fi
 
-    current_origin="$(git -C "$plugin_dir" remote get-url origin 2>/dev/null || true)"
+    # Read the configured value directly. `git remote get-url` applies the
+    # user's url.*.insteadOf rewrites and can make an equivalent origin appear
+    # different from the repository pinned in the manifest.
+    current_origin="$(git -C "$plugin_dir" config --get remote.origin.url 2>/dev/null || true)"
     if [[ "$current_origin" != "$repository" ]]; then
         echo "❌ Unexpected origin for $plugin_dir: ${current_origin:-missing}" >&2
         echo "   Expected: $repository" >&2

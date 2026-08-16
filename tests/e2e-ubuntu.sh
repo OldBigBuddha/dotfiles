@@ -49,6 +49,13 @@ cd "$test_repo"
 DEBIAN_FRONTEND=noninteractive ./setup.sh
 DEBIAN_FRONTEND=noninteractive ./setup.sh
 
+# A user's HTTPS-to-SSH rewrite must not change the literal origin comparison.
+# The pinned commit is already present, so this remains an offline check.
+GIT_CONFIG_COUNT=1 \
+  GIT_CONFIG_KEY_0='url.git@github.com:.insteadOf' \
+  GIT_CONFIG_VALUE_0='https://github.com/' \
+  scripts/install-zsh-plugins.zsh zsh/.config/zsh/plugins.toml
+
 command -v stow >/dev/null 2>&1 || fail "GNU Stow was not installed"
 command -v zsh >/dev/null 2>&1 || fail "zsh was not installed"
 command -v git >/dev/null 2>&1 || fail "Git was not installed"
@@ -95,6 +102,7 @@ git check-ignore -q gh/.config/gh/hosts.yml || fail "GitHub authentication state
 DOTFILES_E2E_REPO="$test_repo" zsh -lic '
   [[ -o sharehistory ]] || exit 1
   (( $+functions[cdr] )) || exit 1
+  (( $+functions[compdef] )) || exit 1
   (( $+functions[_zsh_autosuggest_start] )) || exit 1
   command -v git-root >/dev/null || exit 1
   command -v herdr >/dev/null || exit 1
