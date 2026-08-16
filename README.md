@@ -96,15 +96,16 @@ only with a public key; never add a private key or authentication token.
 `setup.sh` detects macOS versus Linux, rejects unsupported Linux distributions,
 installs GNU Stow when it is missing (Homebrew on macOS, APT on Ubuntu/Debian),
 and installs missing `git`, `curl`, `stow`, and `zsh` bootstrap prerequisites
-through APT on Linux. It also requires zsh 5.9 or newer and verifies that an
-APT-managed zsh is not older than the candidate in the currently configured
-package indexes. It then applies the appropriate packages, copies small helper
-scripts to `~/.local/bin`, installs mise when needed, and installs Herdr through
-mise on both macOS and Linux. It does not install a general software catalog.
+through APT on Linux. It verifies that an APT-managed zsh is not older than the
+candidate in the currently configured package indexes. It then applies the
+appropriate packages, copies small helper scripts to `~/.local/bin`, installs
+mise when needed, and installs Herdr through mise on both macOS and Linux. It
+does not install a general software catalog.
 
-Ubuntu 24.04's supported package is zsh 5.9. Upstream may publish newer patch
-releases during the LTS lifetime; this repository intentionally follows the
-Ubuntu package rather than compiling a login shell from source. Run `sudo apt
+This repository intentionally follows each supported distribution's zsh
+package rather than imposing an upstream version floor or compiling a login
+shell from source. Ubuntu 24.04 currently provides zsh 5.9, while older
+Ubuntu/Debian releases may provide an earlier compatible version. Run `sudo apt
 update` before `setup.sh` when you need the candidate-version check to reflect
 the newest repository metadata.
 

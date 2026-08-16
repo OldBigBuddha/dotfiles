@@ -80,11 +80,6 @@ case "$OS" in
         fi
 
         zsh_version="$(zsh -fc 'print -r -- $ZSH_VERSION')"
-        if ! dpkg --compare-versions "$zsh_version" ge 5.9; then
-            echo "❌ zsh 5.9 or newer is required; found $zsh_version." >&2
-            exit 1
-        fi
-
         installed_zsh_package="$(dpkg-query -W -f='${Version}' zsh 2>/dev/null || true)"
         candidate_zsh_package="$(apt-cache policy zsh | awk '/Candidate:/ { print $2; exit }')"
         if [[ -n "$installed_zsh_package" && -n "$candidate_zsh_package" && "$candidate_zsh_package" != "(none)" ]] && \

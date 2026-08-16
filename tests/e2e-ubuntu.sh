@@ -51,8 +51,12 @@ command -v curl >/dev/null 2>&1 || fail "curl was not installed"
 [[ -x "$HOME/.local/bin/mise" ]] || fail "mise was not installed"
 "$HOME/.local/bin/mise" exec herdr -- herdr --version >/dev/null || \
   fail "Herdr was not installed through mise"
-zsh -fc 'autoload -Uz is-at-least; is-at-least 5.9 "$ZSH_VERSION"' || \
-  fail "zsh 5.9 or newer was not installed"
+installed_zsh_package="$(dpkg-query -W -f='${Version}' zsh 2>/dev/null || true)"
+candidate_zsh_package="$(apt-cache policy zsh | awk '/Candidate:/ { print $2; exit }')"
+[[ -n "$installed_zsh_package" && -n "$candidate_zsh_package" ]] || \
+  fail "could not determine the installed and candidate zsh packages"
+dpkg --compare-versions "$installed_zsh_package" ge "$candidate_zsh_package" || \
+  fail "installed zsh is older than the APT candidate"
 
 assert_link "$HOME/.zshenv" "$test_repo/zsh-linux/.zshenv"
 assert_link "$HOME/.zshrc" "$test_repo/zsh-linux/.zshrc"
