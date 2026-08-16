@@ -107,6 +107,17 @@ mise on both macOS and Linux. It does not install a general software catalog.
 Plugin updates are explicit commit changes in
 `zsh/.config/zsh/plugins.toml`; shell startup never fetches from the network.
 
+The Zsh environment also supports commands launched by local AI agents, IDEs,
+and other non-interactive, non-login Zsh processes. In a non-interactive shell,
+each OS-specific `.zshenv` adds
+`${XDG_DATA_HOME:-$HOME/.local/share}/mise/shims` ahead of `~/.local/bin`,
+making mise-managed tools available without a prompt hook. Interactive shells
+continue to use `mise activate zsh` so directory changes and mise environment
+variables work normally. Scripts and agent runtimes that do not launch Zsh
+must inherit this `PATH` from their parent process or invoke tools through
+`mise exec`; remote and cloud agents should use their own explicit setup
+scripts rather than depend on local shell startup files.
+
 This repository intentionally follows each supported distribution's zsh
 package rather than imposing an upstream version floor or compiling a login
 shell from source. Ubuntu 24.04 currently provides zsh 5.9, while older
