@@ -8,5 +8,15 @@
 [user]
 	signingkey = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDvQze+HOHpQPzD5Uv6yu+wtUh+Zpe9I2HXn1KwadphZ
 
+[gpg]
+	format = ssh
+
 [gpg "ssh"]
 	program = /opt/1Password/op-ssh-sign
+	allowedSignersFile = ~/.config/git/allowed_signers
+
+[commit]
+	gpgsign = true
+
+[tag]
+	gpgSign = true

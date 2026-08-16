@@ -1,0 +1,28 @@
+name: Linux E2E
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ubuntu-24-04:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        # actions/checkout v7.0.1 uses the Actions runner's Node.js 24 runtime.
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Test clean Ubuntu bootstrap
+        run: |
+          docker run --rm \
+            --volume "$GITHUB_WORKSPACE:/dotfiles:ro" \
+            ubuntu:24.04 \
+            bash /dotfiles/tests/e2e-ubuntu.sh

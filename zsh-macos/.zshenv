@@ -2,16 +2,11 @@
 
 export PATH
 export MANPATH
-export WORK_DIR
-export ANTIGRAVITY_ROOT
-export NPM_PACKAGES
+export WORK_DIR="$HOME/work_dir"
+export ANTIGRAVITY_ROOT="$HOME/.antigravity"
+export NPM_PACKAGES="$HOME/.npm-packages"
 # for microsandbox
-export DYLD_LIBRARY_PATH
-
-work_dir=$HOME/work_dir
-antigravity_root=$HOME/.antigravity
-npm_packages=$HOME/.npm-packages
-dyld_library_path=$HOME/.microsandbox/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}
+export DYLD_LIBRARY_PATH="$HOME/.microsandbox/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
 
 # -U: keep only the first occurrence of each duplicated value
 typeset -U PATH path MANPATH manpath FPATH fpath
@@ -39,7 +34,7 @@ path=(
 
 manpath=(
     /usr/local/share/man(N-/)
-    ${npm_packages}/share/man(N-/)
+    ${NPM_PACKAGES}/share/man(N-/)
     ${manpath}
 )
 

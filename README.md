@@ -1,104 +1,173 @@
 # Dotfiles
 
-Personal dotfiles managed with GNU Stow.
+Personal macOS and Ubuntu dotfiles managed with GNU Stow. This repository
+configures the user environment; it does not provision a complete workstation.
 
 ## Packages
 
-### macOS Only
+Common packages applied on both operating systems:
 
-- **aerospace**: Tiling window manager configuration
-- **sketchybar**: macOS status bar customization
-- **wezterm**: Terminal emulator configuration
+- `gh`: GitHub CLI configuration (never authentication state)
+- `git`: Git identity, editor, ignores, and other portable defaults
+- `mise`: language runtimes and portable userland tools
+- `nvim`: AstroNvim-based Neovim configuration
+- `starship`: prompt configuration
+- `yazi`: file manager configuration
+- `zsh`: shared history, aliases, and tool initialization
 
-### Cross-platform (common)
+macOS-only packages and overlays:
 
-- **gh**: GitHub CLI configuration
-- **git**: Git configuration (.gitconfig, .config/git/ignore)
-- **mise**: mise tool versions (`~/.config/mise/config.toml`)
-- **nvim**: Neovim editor configuration (AstroNvim setup)
-- **starship**: Starship prompt configuration
-- **yazi**: Yazi file manager configuration
-- **zsh**: Shared shell settings (history, aliases, tool init)
+- `aerospace`, `sketchybar`, `wezterm`
+- `claude-macos`: Claude Code settings, hooks, and skills
+- `git-macos`: Secure Enclave SSH commit signing
+- `zsh-macos`: Homebrew, 1Password agent, OrbStack, and macOS paths
+- `bin-macos`: Secure Enclave Git-signing helpers
 
-### Cross-platform (macOS)
+Linux-specific packages:
 
-- **claude-macos**: Claude Code settings and custom commands
-- **git-macos**: macOS-specific git settings (Secure Enclave SSH signing)
-- **git-linux**: Linux-specific git settings (1Password SSH signing)
-- **zsh-macos**: Shell configuration (.zshrc, .zshenv, .zprofile) - sources zsh
+- `zsh-linux`: minimal zsh startup files that load the shared configuration
+- `git-linux`: optional 1Password SSH signing configuration; not applied by
+  `setup.sh` because 1Password is an external prerequisite
 
-> **Note**: When OS-specific configuration is needed for a common package, create a new `xxx-macos` (or `xxx-linux`) package with only the OS-specific settings, following the git/git-macos pattern.
+## macOS setup
 
-## Setup
-
-### Bootstrap (new machine)
+Install Homebrew first, then:
 
 ```bash
-# 1. Install Homebrew, then clone this repo
-git clone <repo-url> ~/dotfiles
+git clone https://github.com/OldBigBuddha/dotfiles.git ~/dotfiles
 cd ~/dotfiles
 
-# 2. Install Homebrew packages (taps, brews, casks)
 brew bundle --file=Brewfile
-
-# 3. Stow all packages
 ./setup.sh
 
-# 4. Install mise (manages language runtimes — node/python/go/rust)
-curl https://mise.run | sh
-mise install   # picks up ~/.config/mise/config.toml from the `mise` package
+~/.local/bin/mise install
+~/.local/bin/mise exec -- pnpm install --frozen-lockfile
+exec zsh
+```
 
-# 5. Install Claude Code
-curl -fsSL https://claude.ai/install.sh | bash
+Create the per-machine Secure Enclave signing key after the new shell starts:
 
-# 6. Create the commit signing key (macOS only, once per machine)
+```bash
 setup-git-signing-key
 ```
 
-> Step 6 generates a key inside the Secure Enclave and prints its public key. Register it on GitHub as a **Signing key**, then append it to `git/.config/git/allowed_signers` — the script prints both reminders. Secure Enclave keys cannot leave the machine, so every Mac has its own key. On Linux, signing goes through 1Password (`git-linux`) and no extra step is needed.
+Register the printed public key on GitHub as a signing key and add the public
+key to `git/.config/git/allowed_signers`, as instructed by the script.
 
-> Language runtimes (node, python, go, rust, etc.) are intentionally not in `Brewfile`. They are pinned to mise via `HOMEBREW_FORBIDDEN_FORMULAE` in `zsh-macos/.zshenv`.
-
-### Manual installation
-
-```bash
-# Install all packages (macOS)
-stow aerospace sketchybar wezterm
-stow gh git mise nvim starship yazi zsh
-stow claude-macos git-macos zsh-macos
-
-# Or install individually
-stow zsh-macos
-```
-
-## Usage
-
-### Install a package
+## Ubuntu 24.04 setup
 
 ```bash
-stow <package-name>
+sudo apt update
+sudo apt install -y git curl stow zsh
+
+git clone https://github.com/OldBigBuddha/dotfiles.git ~/dotfiles
+cd ~/dotfiles
+
+./setup.sh
+
+~/.local/bin/mise install
+~/.local/bin/mise exec -- pnpm install --frozen-lockfile
+
+chsh -s "$(command -v zsh)"
+exec zsh
 ```
 
-### Uninstall a package
+After installation, authenticate tools locally as needed. For example,
+`gh auth login` creates `~/.config/gh/hosts.yml`; that file is deliberately
+ignored and is not managed by this repository.
+
+### Optional Linux commit signing
+
+The normal Ubuntu setup leaves Git commit signing disabled, so Git works before
+any credential application is installed. To reuse the existing 1Password SSH
+signing setup, install and configure 1Password for Linux, verify that
+`/opt/1Password/op-ssh-sign` exists, then apply the optional overlay:
 
 ```bash
-stow -D <package-name>
+cd ~/dotfiles
+stow -v --no-folding --target="$HOME" git-linux
 ```
 
-### Reinstall a package
+The public signing key in `git-linux` is machine/account specific. Update it
+only with a public key; never add a private key or authentication token.
+
+## Tool ownership
+
+`setup.sh` detects macOS versus Linux, rejects unsupported Linux distributions,
+installs GNU Stow when it is missing (Homebrew on macOS, APT on Ubuntu/Debian),
+and installs missing `git`, `curl`, `stow`, and `zsh` bootstrap prerequisites
+through APT on Linux. It also requires zsh 5.9 or newer and verifies that an
+APT-managed zsh is not older than the candidate in the currently configured
+package indexes. It then applies the appropriate packages, copies small helper
+scripts to `~/.local/bin`, installs mise when needed, and installs Herdr through
+mise on both macOS and Linux. It does not install a general software catalog.
+
+Ubuntu 24.04's supported package is zsh 5.9. Upstream may publish newer patch
+releases during the LTS lifetime; this repository intentionally follows the
+Ubuntu package rather than compiling a login shell from source. Run `sudo apt
+update` before `setup.sh` when you need the candidate-version check to reflect
+the newest repository metadata.
+
+Herdr is installed during `setup.sh` so it is available immediately. A later
+`mise install` installs or updates all portable tools declared in
+`mise/.config/mise/config.toml`, including Node.js, Python, Go, Rust, Neovim,
+GitHub CLI, Herdr, pnpm, ripgrep, fd, fzf, jq, bat, lsd, starship, yazi, and
+zoxide.
+`pnpm install --frozen-lockfile` installs the repository's secretlint
+dependencies and activates the required local pre-commit hook. A commit fails
+when secretlint reports a possible secret or the hook cannot run.
+
+The macOS `Brewfile` is limited to bootstrap/system integration and macOS-only
+applications. `mcfly`, `zsh-autosuggestions`, and `python-yq` remain Homebrew
+packages because they are currently macOS-specific parts of this environment.
+
+## Manual Stow usage
 
 ```bash
-stow -R <package-name>
+# Common packages
+stow --no-folding --target="$HOME" gh git mise nvim starship yazi zsh
+
+# macOS overlays
+stow --no-folding --target="$HOME" claude-macos git-macos zsh-macos
+
+# Linux shell overlay
+stow --no-folding --target="$HOME" zsh-linux
+
+# Remove or reapply one package
+stow -D --target="$HOME" <package-name>
+stow -R --no-folding --target="$HOME" <package-name>
 ```
 
-## Notes
+Stow reports conflicts instead of overwriting existing files. Back up or merge
+those files deliberately before rerunning setup.
 
-### Excluded Files
+## Scope and secrets
 
-The following files are intentionally excluded from version control:
+This repository owns shell, editor, Git, CLI, and userland runtime/tool
+configuration. Hyper-V VM creation, Ubuntu desktop policy, kernel/eBPF tooling,
+reversing tools, security-research workloads, and other machine roles belong in
+separate provisioning layers.
 
-- **gh**: `~/.config/gh/hosts.yml` - Contains GitHub authentication tokens
-- **claude-macos**: Dynamic data files (history.jsonl, debug/, session-env/, todos/, etc.)
+Never commit generated credentials or authentication state, including:
 
-These files remain in their original locations and are not managed by Stow.
+- `gh/.config/gh/hosts.yml`
+- SSH private keys
+- Claude authentication/session data
+- AWS, Cloudflare, Shodan, or other API credentials
 
+The Claude package contains selected static macOS settings only. Dynamic Claude
+directories such as history, debug data, session environments, and todos remain
+outside the package and must stay untracked.
+
+## Validation
+
+The Linux E2E runs the repository twice in a clean Ubuntu 24.04 container. It
+checks APT bootstrap, real Stow links, zsh startup, Git defaults, OS-specific
+package isolation, and credential-file exclusions.
+
+```bash
+docker run --rm \
+  --volume "$PWD:/dotfiles:ro" \
+  ubuntu:24.04 \
+  bash /dotfiles/tests/e2e-ubuntu.sh
+```
